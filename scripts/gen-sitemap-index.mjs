@@ -7,7 +7,7 @@ const SITE_URL =
 
 const LOCALES = 12;
 const SITEMAP_PAIRS = Number(process.env.SITEMAP_PAIRS ?? 4000);
-const SITEMAP_CHUNK = 20000;
+const SITEMAP_CHUNK = 8000; // must match lib/site.ts
 const chunks = Math.ceil(((2 + SITEMAP_PAIRS) * LOCALES) / SITEMAP_CHUNK);
 const now = new Date().toISOString();
 

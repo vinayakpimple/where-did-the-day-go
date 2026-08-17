@@ -12,5 +12,10 @@ export const PRERENDER_PAIRS = Number(process.env.PRERENDER_PAIRS ?? 60);
 /** How many pairs go into the sitemaps (the rest still work, just aren't listed). */
 export const SITEMAP_PAIRS = Number(process.env.SITEMAP_PAIRS ?? 4000);
 
-/** Sitemap chunk size — the protocol caps a single sitemap at 50,000 URLs. */
-export const SITEMAP_CHUNK = 20000;
+/**
+ * Sitemap chunk size. The protocol caps a single sitemap at 50,000 URLs, but the
+ * binding limit is Vercel's ~19 MB cap on a prerendered response: each entry carries
+ * 12 hreflang alternates (~1.3 KB), so 8,000 keeps a chunk near 10 MB.
+ * Must match SITEMAP_CHUNK in scripts/gen-sitemap-index.mjs.
+ */
+export const SITEMAP_CHUNK = 8000;
