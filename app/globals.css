@@ -264,7 +264,7 @@ footer b{color:var(--ink2)}
 .pass-sheet{
   --pass-sheet-w:400px;
   position:fixed;top:var(--map-topbar-h,0px);bottom:0;inset-inline-end:0;
-  width:min(var(--pass-sheet-w),100vw);z-index:41;
+  width:min(var(--pass-sheet-w),100%);z-index:41;
   background:var(--surface);border-inline-start:1px solid var(--border);
   padding:18px 20px 28px;overflow-x:hidden;overflow-y:auto;
   box-shadow:-18px 0 40px rgba(0,0,0,.35);
@@ -279,8 +279,8 @@ footer b{color:var(--ink2)}
 /* Below the thin header AND the SF/Delhi clock pills — those stay on the globe. */
 body:has(.inflight-map) .pass-sheet{top:calc(var(--map-topbar-h,60px) + 96px)}
 .pass-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.pass-sheet-head h2,.pass-sheet .note{margin:0;overflow-wrap:anywhere}
-.pass-sheet .note{margin:0 0 10px}
+.pass-sheet-head h2{margin:0;overflow-wrap:anywhere}
+.pass-sheet .note{margin:0 0 10px;color:var(--ink2);font-size:15px;overflow-wrap:anywhere}
 .stampgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
 .stamp{border:2px dashed var(--border);border-radius:12px;padding:12px 14px;background:var(--surface2);overflow-x:hidden}
 .stampcities,.stampmeta{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
@@ -289,7 +289,7 @@ body:has(.inflight-map) .pass-sheet{top:calc(var(--map-topbar-h,60px) + 96px)}
 .stampstars{color:var(--del)}
 .passprivacy{font-size:12.5px;opacity:.8}
 @media (max-width:640px){
-  .pass-sheet{width:100vw}
+  .pass-sheet{width:100%}
 }
 
 /* ---------- split hour table ---------- */
