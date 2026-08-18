@@ -183,5 +183,11 @@
   "quiz.dst.wrong": "Not quite — daylight saving can move the gap.",
   "sim.kid.same": "Take off {depDay}, land {arrDay} — same calendar day.",
   "sim.kid.flip": "Take off {depDay}, land {arrDay} — the calendar jumped.",
-  "sim.kid.back": "Take off {depDay}, land {arrDay} — you land on yesterday."
+  "sim.kid.back": "Take off {depDay}, land {arrDay} — you land on yesterday.",
+  "play.views": "Map views",
+  "play.view.route": "Route",
+  "play.view.follow": "Follow",
+  "play.view.daynight": "Day and night",
+  "play.caption.follow": "You're behind the plane. Pinch to look closer.",
+  "play.caption.daynight": "One side in daylight. The other is night."
 }

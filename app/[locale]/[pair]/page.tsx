@@ -100,28 +100,18 @@ export default async function RoutePage({ params }: Props) {
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="pairpage">
-      <h1>{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
-      <p className="dek">
-        <Link href={`/${locale}/${pairSlug(to.slug, from.slug)}`}>
-          {t(msgs, "route.reverse", { from: from.name, to: to.name })}
-        </Link>
-      </p>
-
+      <h1 className="sr-only">{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
       <PlayLoop
         from={{ name: from.name, tz: from.tz, lat: from.lat, lon: from.lon, country: from.country, cc: from.cc }}
         to={{ name: to.name, tz: to.tz, lat: to.lat, lon: to.lon, country: to.country, cc: to.cc }}
         pairSlug={pair}
         msgs={msgs} locale={locale}
-        defaultMinutes={f.flightMin}
         km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
         polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
         halfHour={halfHour}
         dstKey={f.dstKey}
         fromName={from.name} toName={to.name}
       />
-
-      </div>
 
       <details className="grownups">
         <summary>{t(msgs, "play.grownups")}</summary>

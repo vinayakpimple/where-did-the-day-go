@@ -19,14 +19,29 @@ const DEL = new THREE.Color("#c98500");  // destination city — gold, always
 const AMBIENT_LOOP_S = 12;
 const FLY_ONCE_S = 2.5;
 
+export type GlobeView = "route" | "follow" | "daynight";
+
 export type GlobeController = {
   setSize(w: number, h: number): void;
   setDirection(outbound: boolean): void;
+  setView(view: GlobeView): void;
   flyOnce(): void;
   pause(): void;
   resume(): void;
   dispose(): void;
 };
+
+function northUpBase(mid: THREE.Vector3): THREE.Quaternion {
+  const z = mid.clone().normalize();
+  let y = new THREE.Vector3(0, 1, 0);
+  y.addScaledVector(z, -y.dot(z));
+  if (y.lengthSq() < 1e-8) y.set(1, 0, 0);
+  y.normalize();
+  const x = new THREE.Vector3().crossVectors(y, z).normalize();
+  y.crossVectors(z, x).normalize();
+  const m = new THREE.Matrix4().makeBasis(x, y, z);
+  return new THREE.Quaternion().setFromRotationMatrix(m).invert();
+}
 
 export function createGlobeScene(host: HTMLDivElement, opts: {
   from: { lat: number; lon: number };
@@ -54,9 +69,9 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   const aVec = latLonToVec3(opts.from.lat, opts.from.lon);
   const bVec = latLonToVec3(opts.to.lat, opts.to.lon);
   const θ = separationAngle(aVec, bVec);
-  const camDist = Math.min(3.4, Math.max(2.15, 2.1 + 1.4 * (θ / Math.PI)));
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 30);
-  camera.position.set(0, 0, camDist);
+  const routeDist = Math.min(3.4, Math.max(2.15, 2.1 + 1.4 * (θ / Math.PI)));
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
+  camera.position.set(0, 0, routeDist);
 
   /* ------------------------------- stars -------------------------------- */
   const starPos = new Float32Array(300 * 3);
@@ -172,22 +187,20 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   /* -------------------------- base orientation -------------------------- */
   // Rotate the pair's midpoint to face the camera, from→to reading left→right.
   const A = new THREE.Vector3(...aVec), B = new THREE.Vector3(...bVec);
-  const w = A.clone().add(B).normalize();
-  if (w.lengthSq() < 1e-9) w.set(0, 0, 1);
-  const ab = B.clone().sub(A);
-  const u = ab.clone().sub(w.clone().multiplyScalar(ab.dot(w)));
-  if (u.lengthSq() < 1e-9) u.set(1, 0, 0); else u.normalize();
-  const v = w.clone().cross(u);
-  const qBase = new THREE.Quaternion().setFromRotationMatrix(
-    new THREE.Matrix4().makeBasis(u, v, w).transpose(),
-  );
+  const mid = A.clone().add(B).normalize();
+  if (mid.lengthSq() < 1e-9) mid.set(0, 0, 1);
+  const qRoute = northUpBase(mid);
+  const qIdentity = new THREE.Quaternion();
 
-  let yaw = opts.reducedMotion ? 0 : 2.8;   // intro starts wound 160° away
+  let view: GlobeView = "route";
+  let zoom = 1;
+  let yaw = opts.reducedMotion ? 0 : 2.8;
   let pitch = 0;
   const applyOrientation = () => {
+    if (view === "follow") { group.quaternion.copy(qIdentity); return; }
     const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
     const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), pitch);
-    group.quaternion.copy(qX).multiply(qY).multiply(qBase);
+    group.quaternion.copy(qX).multiply(qY).multiply(qRoute);
   };
   applyOrientation();
 
@@ -225,7 +238,7 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     tmpV.project(camera);
     el.style.left = `${(tmpV.x * 0.5 + 0.5) * 100}%`;
     el.style.top = `${(-tmpV.y * 0.5 + 0.5) * 100}%`;
-    el.style.opacity = facing < 0.12 ? "0" : "1";
+    el.style.opacity = (view === "follow" ? facing < -0.05 : facing < 0.12) ? "0" : "1";
   };
 
   /* ------------------------------ animators ----------------------------- */
@@ -255,27 +268,44 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   };
   placePlane();
 
+  const applyCamera = () => {
+    if (view === "follow") {
+      const p = new THREE.Vector3(...pathAt(planeT));
+      const n = new THREE.Vector3(...pathAt(Math.min(1, planeT + 0.025)));
+      const dir = n.sub(p.clone()).normalize();
+      const radial = p.clone().normalize();
+      const back = 0.46 / zoom;
+      const lift = 0.22 / zoom;
+      camera.position.copy(p).addScaledVector(dir, -back).addScaledVector(radial, lift);
+      camera.up.copy(radial);
+      camera.lookAt(p.clone().addScaledVector(dir, 0.55));
+      camera.near = 0.04;
+      camera.far = 40;
+    } else {
+      camera.up.set(0, 1, 0);
+      const base = view === "daynight" ? 4.35 : routeDist;
+      camera.position.set(0, 0, Math.min(6.2, Math.max(1.65, base / zoom)));
+      camera.lookAt(0, 0, 0);
+      camera.near = 0.1;
+      camera.far = 40;
+    }
+    camera.updateProjectionMatrix();
+  };
+
   const frame = (now: number) => {
     raf = 0;
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     let active = false;
 
-    if (introT < 1) {
+    if (view === "route" && introT < 1) {
       introT = Math.min(1, introT + dt / 3.2);
       yaw = 2.8 * (1 - easeOut(introT));
       active = true;
-    } else if (!dragging) {
-      if (Math.abs(yawVel) > 0.0005) {
-        yaw += yawVel * dt;
-        yawVel *= Math.pow(0.94, dt * 60);
-        active = true;
-      } else if (!opts.reducedMotion && now - lastInteract > 2500) {
-        // Idle spin fast enough to *see* — a full turn in under a minute,
-        // like the Google Earth arrival, not the real planet's 24 h.
-        yaw += 0.12 * dt;
-        active = true;
-      }
+    } else if (view === "route" && !dragging && Math.abs(yawVel) > 0.0005) {
+      yaw += yawVel * dt;
+      yawVel *= Math.pow(0.94, dt * 60);
+      active = true;
     }
 
     if (flyT >= 0) {
@@ -291,6 +321,7 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     }
 
     applyOrientation();
+    applyCamera();
     sunUniform.copy(localSun).applyQuaternion(group.quaternion);
     renderer.render(scene, camera);
     placeLabel(markerFrom, opts.labels[0]);
@@ -309,34 +340,53 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
 
   /* -------------------------------- drag -------------------------------- */
   const el = renderer.domElement;
-  el.style.touchAction = "pan-y";
+  el.style.touchAction = "none";
   el.style.cursor = "grab";
   let px = 0, py = 0, startX = 0, startY = 0, committed = false, activeId = -1;
   const recent: { t: number; x: number }[] = [];
+  const pointers = new Map<number, { x: number; y: number }>();
+  let pinch0 = 0;
+  let zoom0 = 1;
+  const pinchDist = () => {
+    const pts = [...pointers.values()];
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  };
 
   const onDown = (e: PointerEvent) => {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    lastInteract = performance.now(); yawVel = 0;
+    if (pointers.size === 2) {
+      pinch0 = pinchDist(); zoom0 = zoom;
+      dragging = false; committed = false; activeId = -1;
+      return;
+    }
     activeId = e.pointerId;
     startX = px = e.clientX; startY = py = e.clientY;
     recent.length = 0;
-    committed = e.pointerType !== "touch";     // mouse/pen grab immediately
+    committed = e.pointerType !== "touch";
     if (committed) { dragging = true; el.setPointerCapture(e.pointerId); el.style.cursor = "grabbing"; }
-    lastInteract = performance.now(); yawVel = 0;
   };
   const onMove = (e: PointerEvent) => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2 && pinch0 > 0) {
+      const d = pinchDist();
+      if (d > 0) {
+        zoom = Math.min(2.4, Math.max(0.55, zoom0 * (d / pinch0)));
+        needsFrame = true; kick();
+      }
+      return;
+    }
     if (e.pointerId !== activeId) return;
     const dx = e.clientX - px, dy = e.clientY - py;
     if (!committed) {
-      // Deferred touch commit (invariant-6 pattern): only claim the gesture on
-      // clear horizontal intent, so vertical scrolls pass through untouched.
       const tx = e.clientX - startX, ty = e.clientY - startY;
-      if (Math.abs(tx) > 6 && Math.abs(tx) > Math.abs(ty)) {
+      if (Math.hypot(tx, ty) > 8) {
         committed = true; dragging = true;
         el.setPointerCapture(e.pointerId);
-      } else if (Math.abs(ty) > 10) {
-        activeId = -1;                          // it's a scroll — let go entirely
-        return;
       } else return;
     }
+    if (view === "follow") { lastInteract = performance.now(); return; }
     px = e.clientX; py = e.clientY;
     const k = 1 / (renderer.domElement.clientWidth || 400) * 3.2;
     yaw += dx * k;
@@ -347,8 +397,10 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     needsFrame = true; kick();
   };
   const onUp = (e: PointerEvent) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch0 = 0;
     if (e.pointerId !== activeId) return;
-    if (committed && recent.length >= 2) {
+    if (committed && recent.length >= 2 && view === "route") {
       const a = recent[0], b = recent[recent.length - 1];
       const dtms = b.t - a.t;
       if (dtms > 0) yawVel = ((b.x - a.x) / dtms) * 3.2; // px/ms → rad/s (scaled like drag)
@@ -358,15 +410,23 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     lastInteract = performance.now();
     kick();
   };
+  const onWheel = (e: WheelEvent) => {
+    e.preventDefault();
+    zoom = Math.min(2.4, Math.max(0.55, zoom * Math.exp(-e.deltaY * 0.0016)));
+    lastInteract = performance.now();
+    needsFrame = true; kick();
+  };
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);
   el.addEventListener("pointerup", onUp);
   el.addEventListener("pointercancel", onUp);
+  el.addEventListener("wheel", onWheel, { passive: false });
   cleanups.push(() => {
     el.removeEventListener("pointerdown", onDown);
     el.removeEventListener("pointermove", onMove);
     el.removeEventListener("pointerup", onUp);
     el.removeEventListener("pointercancel", onUp);
+    el.removeEventListener("wheel", onWheel);
   });
 
   const onVis = () => { if (!document.hidden) kick(); };
@@ -394,6 +454,13 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
       outbound = v;
       planeT = opts.reducedMotion ? 0.5 : 0;
       placePlane();
+      needsFrame = true; kick();
+    },
+    setView(v) {
+      if (view === v) return;
+      view = v;
+      yaw = 0; pitch = 0; yawVel = 0; introT = 1;
+      if (v === "daynight") zoom = Math.min(zoom, 1);
       needsFrame = true; kick();
     },
     flyOnce() {
