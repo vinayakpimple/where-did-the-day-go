@@ -7,8 +7,9 @@ import { routeFacts } from "@/lib/route-facts";
 import { SITE_URL, PRERENDER_PAIRS } from "@/lib/site";
 import LiveClocks from "@/components/LiveClocks";
 import DayRibbon from "@/components/DayRibbon";
-import FlightArc from "@/components/FlightArc";
-import TripSim from "@/components/TripSim";
+import GlobePanel from "@/components/GlobePanel";
+import QuizCard from "@/components/QuizCard";
+import PassportStamp from "@/components/PassportStamp";
 
 /** Long-tail pairs render on first request, then stay cached. */
 export const dynamicParams = true;
@@ -122,6 +123,25 @@ export default async function RoutePage({ params }: Props) {
       </p>
 
       <section className="card">
+        <div className="kicker">{t(msgs, "arc.kicker", { km: f.kmLabel })}</div>
+        <h2>{t(msgs, "sim.title")}</h2>
+        <p className="note">{t(msgs, "sim.note")}</p>
+        <GlobePanel
+          from={{ name: from.name, tz: from.tz, lat: from.lat, lon: from.lon }}
+          to={{ name: to.name, tz: to.tz, lat: to.lat, lon: to.lon }}
+          defaultMinutes={f.flightMin}
+          km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
+          polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
+          msgs={msgs} locale={locale} />
+        <p className="note">
+          {t(msgs, "arc.note", { from: from.name, to: to.name, hours: f.flightLabel })}
+          {f.isPolar ? " " + t(msgs, "arc.note.polar", { lat: String(f.peakLat) }) : ""}
+          {" "}
+          {t(msgs, "arc.schoolDays", { n: String(f.schoolDays) })}
+        </p>
+      </section>
+
+      <section className="card">
         <div className="kicker">{t(msgs, "clocks.kicker")}</div>
         <h2>{t(msgs, "clocks.title")}</h2>
         <p className="note">{t(msgs, "clocks.note")}</p>
@@ -136,45 +156,10 @@ export default async function RoutePage({ params }: Props) {
       </section>
 
       <section className="card">
-        <div className="kicker">{t(msgs, "arc.kicker", { km: f.kmLabel })}</div>
-        <h2>{t(msgs, "arc.title")}</h2>
-        <p className="note">
-          {t(msgs, "arc.note", { from: from.name, to: to.name, hours: f.flightLabel })}
-          {f.isPolar ? " " + t(msgs, "arc.note.polar", { lat: String(f.peakLat) }) : ""}
-          {" "}
-          {t(msgs, "arc.schoolDays", { n: String(f.schoolDays) })}
-        </p>
-        <FlightArc fromName={from.name} toName={to.name}
-          km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
-          polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null} />
-      </section>
-
-      <section className="card">
-        <div className="kicker">{t(msgs, "sim.kicker")}</div>
-        <h2>{t(msgs, "sim.title")}</h2>
-        <p className="note">{t(msgs, "sim.note")}</p>
-        <TripSim from={from} to={to} defaultMinutes={f.flightMin} msgs={msgs} locale={locale} />
-      </section>
-
-      <section className="card">
-        <h2>{t(msgs, "table.title")}</h2>
-        <p className="note">{t(msgs, "table.note")}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
-              <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {f.hourTable.map((r, i) => (
-              <tr key={i}>
-                <td>{r.from}</td>
-                <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="kicker">{t(msgs, "quiz.kicker")}</div>
+        <h2>{t(msgs, "quiz.title")}</h2>
+        <QuizCard from={{ name: from.name, tz: from.tz }} to={{ name: to.name, tz: to.tz }}
+          pairSlug={pair} msgs={msgs} locale={locale} />
       </section>
 
       <div className="rule" />
@@ -221,6 +206,31 @@ export default async function RoutePage({ params }: Props) {
         ))}
       </section>
 
+      <section className="card">
+        <h2>{t(msgs, "table.title")}</h2>
+        <p className="note">{t(msgs, "table.note")}</p>
+        <div className="tablesplit">
+          {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
+            <table key={hi}>
+              <thead>
+                <tr>
+                  <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
+                  <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {half.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.from}</td>
+                    <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ))}
+        </div>
+      </section>
+
       <div className="rule" />
       <h2>{t(msgs, "nearby.title")}</h2>
       <div style={{ marginTop: 14 }}>
@@ -241,6 +251,8 @@ export default async function RoutePage({ params }: Props) {
           ))}
         </div>
       </div>
+
+      <PassportStamp slug={pair} fromName={from.name} toName={to.name} />
     </>
   );
 }

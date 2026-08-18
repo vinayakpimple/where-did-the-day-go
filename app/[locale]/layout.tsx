@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { LOCALES, LOCALE_NAMES, HREFLANG, isLocale, dir, getMessages, t } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/site";
+import { CITIES } from "@/lib/cities";
+import SoundToggle from "@/components/SoundToggle";
+import PassportButton from "@/components/PassportButton";
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -23,6 +26,10 @@ export default async function LocaleLayout({
               <span className="dot" aria-hidden="true" />
               {t(msgs, "site.name")}
             </Link>
+            <div className="topctrls">
+              <SoundToggle onLabel={t(msgs, "sound.on")} offLabel={t(msgs, "sound.off")} />
+              <PassportButton msgs={msgs} locale={locale} totalCities={CITIES.length} />
+            </div>
             <nav className="langbar" aria-label={t(msgs, "nav.language")}>
               {LOCALES.map((l) => (
                 <Link key={l} href={`/${l}`} hrefLang={HREFLANG[l]}

@@ -63,11 +63,23 @@ function Field({
 }
 
 export default function CityPicker({
-  locale, msgs, initialFrom, initialTo,
-}: { locale: string; msgs: Messages; initialFrom: City; initialTo: City }) {
+  locale, msgs, initialFrom, initialTo, onChange,
+}: {
+  locale: string; msgs: Messages; initialFrom: City; initialTo: City;
+  onChange?: (from: City, to: City) => void;
+}) {
   const router = useRouter();
-  const [from, setFrom] = useState<City | null>(initialFrom);
-  const [to, setTo] = useState<City | null>(initialTo);
+  const [from, setFromState] = useState<City | null>(initialFrom);
+  const [to, setToState] = useState<City | null>(initialTo);
+
+  const setFrom = (c: City | null) => {
+    setFromState(c);
+    if (c && to && c.slug !== to.slug) onChange?.(c, to);
+  };
+  const setTo = (c: City | null) => {
+    setToState(c);
+    if (from && c && from.slug !== c.slug) onChange?.(from, c);
+  };
 
   const ready = from && to && from.slug !== to.slug;
   const href = ready ? `/${locale}/${pairSlug(from.slug, to.slug)}` : "#";
@@ -79,7 +91,11 @@ export default function CityPicker({
           onPick={setFrom} placeholder={t(msgs, "home.pick.search")}
           exclude={to?.slug} msgs={msgs} />
         <button className="swapbtn" type="button" aria-label={t(msgs, "route.swap")}
-          onClick={() => { const a = from; setFrom(to); setTo(a); }}>⇄</button>
+          onClick={() => {
+            const a = from, b = to;
+            setFromState(b); setToState(a);
+            if (a && b) onChange?.(b, a);
+          }}>⇄</button>
         <Field id="to" label={t(msgs, "home.pick.to")} value={to}
           onPick={setTo} placeholder={t(msgs, "home.pick.search")}
           exclude={from?.slug} msgs={msgs} />

@@ -13,12 +13,19 @@
   "dependencies": {
     "next": "^15.5.23",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "three": "0.185.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
+    "@types/three": "^0.185.4",
+    "sharp": "^0.35.3",
     "typescript": "5.7.2"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "sharp@0.35.3": true
   }
 }

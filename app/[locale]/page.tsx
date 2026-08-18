@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { getCity, topPairs, pairSlug, CITIES } from "@/lib/cities";
 import { LOCALES, HREFLANG, isLocale, getMessages, t } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/site";
-import CityPicker from "@/components/CityPicker";
+import HomeHero from "@/components/HomeHero";
+import PassportTeaser from "@/components/PassportTeaser";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -44,8 +45,12 @@ export default async function Home({ params }: Props) {
       <p className="dek">{t(msgs, "home.intro")}</p>
 
       <section className="card">
-        <CityPicker locale={locale} msgs={msgs}
+        <HomeHero locale={locale} msgs={msgs}
           initialFrom={getCity("san-francisco")!} initialTo={getCity("new-delhi")!} />
+      </section>
+
+      <section className="card">
+        <PassportTeaser msgs={msgs} locale={locale} totalCities={CITIES.length} />
       </section>
 
       <section className="card">

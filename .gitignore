@@ -3,3 +3,4 @@ node_modules
 .vercel
 next-env.d.ts
 public/sitemap-index.xml
+.env*
