@@ -84,7 +84,9 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   const fail = () => { if (!failed) { failed = true; opts.onFail(); } };
   const loadTex = (url: string) => {
     const tex = loader.load(url, () => { needsFrame = true; kick(); }, undefined, fail);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    // Deliberately NOT SRGBColorSpace: this ShaderMaterial writes gl_FragColor
+    // with no colorspace conversion, so the texture must pass through raw —
+    // marking it sRGB would decode on sample and render the earth washed out.
     tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     disposables.push(tex);
     return tex;
@@ -180,7 +182,7 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     new THREE.Matrix4().makeBasis(u, v, w).transpose(),
   );
 
-  let yaw = opts.reducedMotion ? 0 : 1.2;   // intro starts wound 70° away
+  let yaw = opts.reducedMotion ? 0 : 2.8;   // intro starts wound 160° away
   let pitch = 0;
   const applyOrientation = () => {
     const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
@@ -258,16 +260,18 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
     let active = false;
 
     if (introT < 1) {
-      introT = Math.min(1, introT + dt / 2.4);
-      yaw = 1.2 * (1 - easeOut(introT));
+      introT = Math.min(1, introT + dt / 3.2);
+      yaw = 2.8 * (1 - easeOut(introT));
       active = true;
     } else if (!dragging) {
       if (Math.abs(yawVel) > 0.0005) {
         yaw += yawVel * dt;
         yawVel *= Math.pow(0.94, dt * 60);
         active = true;
-      } else if (!opts.reducedMotion && now - lastInteract > 4000 && flyT < 0) {
-        yaw += 0.02 * dt;
+      } else if (!opts.reducedMotion && now - lastInteract > 2500) {
+        // Idle spin fast enough to *see* — a full turn in under a minute,
+        // like the Google Earth arrival, not the real planet's 24 h.
+        yaw += 0.12 * dt;
         active = true;
       }
     }
