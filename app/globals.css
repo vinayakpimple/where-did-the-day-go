@@ -309,10 +309,8 @@ body:has(.playloop) footer{display:none}
 /* one caption, hide leftover prose inside the loop */
 .playloop .note,.playloop .kicker,.playloop .bignow{display:none}
 
-/* globe: small enough that clocks + slider + quiz still fit */
-.playloop .globewrap{height:132px}
-.playloop .globelabel{font-size:11px}
-.playloop .globecap{font-size:11px;bottom:6px}
+/* globe: full-width hero — earth size wins over fold */
+.playloop .globewrap{height:clamp(280px,52vw,420px)}
 
 /* slider only — pods, direction tabs, duration slider eat the fold */
 .playloop .tabs,.playloop .simgrid{display:none}
@@ -345,8 +343,6 @@ body:has(.playloop) footer{display:none}
 .playloop .qopt.skeleton{min-height:72px}
 
 @media (min-width:860px){
-  .playstage{grid-template-columns:minmax(240px,1fr) minmax(280px,1fr);align-items:start}
-  .playloop .globewrap{height:200px}
   .playloop .city .cname{font-size:16px}
   .playloop .city .digital{font-size:26px}
   .playloop .quizq{font-size:18px}
