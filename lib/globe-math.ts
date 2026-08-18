@@ -9,12 +9,14 @@ const rad = (d: number) => (d * Math.PI) / 180;
 
 /**
  * Lat/lon → position on a sphere of radius r, matching how three's
- * SphereGeometry wraps an equirectangular texture (lon 0 faces +x after the
- * texture seam; see the marker check in the verification list).
+ * SphereGeometry wraps an equirectangular texture. Verified empirically
+ * against SphereGeometry's own UVs: lon 0 faces +x, lon 90°E faces −z.
+ * (The widely-copied "-cos·cos / +sin" variant is antipodal — markers land
+ * 180° of longitude away from their city.)
  */
 export function latLonToVec3(lat: number, lon: number, r = 1): Vec3 {
   const φ = rad(lat), λ = rad(lon);
-  return [-r * Math.cos(φ) * Math.cos(λ), r * Math.sin(φ), r * Math.cos(φ) * Math.sin(λ)];
+  return [r * Math.cos(φ) * Math.cos(λ), r * Math.sin(φ), -r * Math.cos(φ) * Math.sin(λ)];
 }
 
 function dot(a: Vec3, b: Vec3): number {
