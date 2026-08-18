@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   getPassport, getQuizStats, citiesVisited, PASSPORT_EVENT, OPEN_PASSPORT_EVENT,
   type Passport, type QuizStats,
@@ -8,13 +9,15 @@ import {
 import { t, type Messages } from "@/lib/i18n";
 
 /**
- * Topbar 🛂 badge + the passport drawer. Everything hydrates post-mount from
- * localStorage; the server renders an empty badge.
+ * Topbar 🛂 badge + a right-edge stamp sheet. The sheet is portaled to
+ * document.body so the pair-page topbar (backdrop-filter) and wrap
+ * (overflow:hidden) cannot clip it to a thin strip.
  */
 export default function PassportButton({ msgs, locale, totalCities }: {
   msgs: Messages; locale: string; totalCities: number;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [passport, setPassport] = useState<Passport | null>(null);
   const [quiz, setQuiz] = useState<QuizStats | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -26,15 +29,34 @@ export default function PassportButton({ msgs, locale, totalCities }: {
   }, []);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const bar = openerRef.current?.closest(".topbar");
+    if (!(bar instanceof HTMLElement)) return;
+    const apply = () => {
+      document.documentElement.style.setProperty("--map-topbar-h", `${bar.offsetHeight}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(bar);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--map-topbar-h");
+    };
+  }, []);
+
+  useEffect(() => {
     refresh();
     window.addEventListener(PASSPORT_EVENT, refresh);
     return () => window.removeEventListener(PASSPORT_EVENT, refresh);
   }, [refresh]);
 
   useEffect(() => {
-    const open = () => setOpen(true);
-    window.addEventListener(OPEN_PASSPORT_EVENT, open);
-    return () => window.removeEventListener(OPEN_PASSPORT_EVENT, open);
+    const openBook = () => setOpen(true);
+    window.addEventListener(OPEN_PASSPORT_EVENT, openBook);
+    return () => window.removeEventListener(OPEN_PASSPORT_EVENT, openBook);
   }, []);
 
   useEffect(() => {
@@ -54,57 +76,61 @@ export default function PassportButton({ msgs, locale, totalCities }: {
     ? Object.entries(passport.stamps).sort((a, b) => (a[1].last < b[1].last ? 1 : -1))
     : [];
 
+  const sheet = (
+    <div
+      className={`pass-sheet${open ? " is-open" : ""}`}
+      role="dialog"
+      aria-modal="false"
+      aria-hidden={!open}
+      aria-label={t(msgs, "passport.title")}
+      inert={!open}
+    >
+      <div className="pass-sheet-head">
+        <h2>🛂 {t(msgs, "passport.title")}</h2>
+        <button ref={closeRef} type="button" className="tab" onClick={() => setOpen(false)}>
+          {t(msgs, "passport.close")}
+        </button>
+      </div>
+      <p className="note">
+        {t(msgs, "passport.progress", { n: nf.format(visited), total: nf.format(totalCities) })}
+      </p>
+      {stamps.length === 0 ? (
+        <p className="note">{t(msgs, "passport.empty")}</p>
+      ) : (
+        <div className="stampgrid">
+          {stamps.map(([slug, s], i) => (
+            <div className="stamp" key={slug} style={{ rotate: `${((i * 7) % 5) - 2}deg` }}>
+              <div className="stampcities">
+                <b style={{ color: "var(--sf)" }}>{s.from}</b>
+                {" → "}
+                <b style={{ color: "var(--del)" }}>{s.to}</b>
+              </div>
+              <div className="stampmeta">
+                {new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" })
+                  .format(new Date(`${s.first}T12:00:00`))}
+                {" · "}
+                {t(msgs, "passport.stampVisits", { n: nf.format(s.visits) })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {quiz && quiz.answered > 0 && (
+        <p className="note">
+          {t(msgs, "passport.quizLine", { correct: nf.format(quiz.correct), answered: nf.format(quiz.answered) })}
+        </p>
+      )}
+      <p className="note passprivacy">{t(msgs, "passport.privacy")}</p>
+    </div>
+  );
+
   return (
     <>
-      <button ref={openerRef} className="passbtn" onClick={() => setOpen(true)}
+      <button ref={openerRef} type="button" className="passbtn" onClick={() => setOpen((v) => !v)}
         aria-expanded={open} aria-label={t(msgs, "passport.button")}>
         🛂{visited > 0 && <span className="passcount">{nf.format(visited)}</span>}
       </button>
-
-      {open && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setOpen(false)} />
-          <div className="drawer" role="dialog" aria-modal="true" aria-label={t(msgs, "passport.title")}>
-            <div className="drawerhead">
-              <h2>🛂 {t(msgs, "passport.title")}</h2>
-              <button ref={closeRef} className="tab" onClick={() => setOpen(false)}>
-                {t(msgs, "passport.close")}
-              </button>
-            </div>
-            <p className="note">
-              {t(msgs, "passport.progress", { n: nf.format(visited), total: nf.format(totalCities) })}
-            </p>
-            {stamps.length === 0 ? (
-              <p className="note">{t(msgs, "passport.empty")}</p>
-            ) : (
-              <div className="stampgrid">
-                {stamps.map(([slug, s], i) => (
-                  <div className="stamp" key={slug} style={{ rotate: `${((i * 7) % 5) - 2}deg` }}>
-                    <div className="stampcities">
-                      <b style={{ color: "var(--sf)" }}>{s.from}</b>
-                      {" → "}
-                      <b style={{ color: "var(--del)" }}>{s.to}</b>
-                    </div>
-                    <div className="stampmeta">
-                      {new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric" })
-                        .format(new Date(`${s.first}T12:00:00`))}
-                      {" · "}
-                      {t(msgs, "passport.stampVisits", { n: nf.format(s.visits) })}
-                      
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {quiz && quiz.answered > 0 && (
-              <p className="note">
-                {t(msgs, "passport.quizLine", { correct: nf.format(quiz.correct), answered: nf.format(quiz.answered) })}
-              </p>
-            )}
-            <p className="note passprivacy">{t(msgs, "passport.privacy")}</p>
-          </div>
-        </>
-      )}
+      {mounted ? createPortal(sheet, document.body) : null}
     </>
   );
 }
