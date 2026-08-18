@@ -84,7 +84,6 @@ export async function createGlobeScene(
 
   const creditHost = document.createElement("div");
   creditHost.className = "globecredit";
-  host.appendChild(creditHost);
 
   const baseLayer = new Cesium.ImageryLayer(
     new Cesium.UrlTemplateImageryProvider({
@@ -114,14 +113,15 @@ export async function createGlobeScene(
     maximumRenderTimeChange: Infinity,
     msaaSamples: 1,
   });
+  host.closest(".globewrap")?.appendChild(creditHost);
 
   const scene = viewer.scene;
   scene.globe.enableLighting = true;
   scene.globe.dynamicAtmosphereLighting = true;
   scene.globe.showGroundAtmosphere = true;
-  scene.sun.show = true;
-  scene.moon.show = true;
-  scene.skyAtmosphere.show = true;
+  if (scene.sun) scene.sun.show = true;
+  if (scene.moon) scene.moon.show = true;
+  if (scene.skyAtmosphere) scene.skyAtmosphere.show = true;
   scene.backgroundColor = Cesium.Color.fromCssColorString("#080c17");
   viewer.clock.currentTime = Cesium.JulianDate.now();
   viewer.clock.shouldAnimate = false;
