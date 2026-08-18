@@ -43,19 +43,21 @@ half-English page. Do not move them out of the build command.
 | `lib/sound.ts` | WebAudio-synthesized SFX. Off by default; ctx created only in a user gesture. |
 | `lib/passport.ts` | localStorage stamps (`wdtdg.passport.v1`, `wdtdg.quiz.v1`, `wdtdg.sound.v1`). |
 | `components/*.tsx` | The interactive pieces. All client components. |
-| `components/Globe/` | The 3D Earth. `GlobeScene.ts` is the ONLY file importing `three`. |
+| `components/Globe/` | The 3D Earth. `CesiumGlobe.ts` is the ONLY file importing `cesium`, via `import()` from `Globe.tsx`. |
 | `messages/*.json` | 169 keys × 12 locales. English is the source of truth. |
 | `messages.bundle.b64` | Transport artifact only — see below. |
 | `public/textures/` | NASA Blue/Black Marble 2K WebP (public domain). Regenerate: `node scripts/fetch-textures.mjs`. |
 
 ## Invariants — do not regress these
 
-**0. `three` is the one rendering dependency, and it stays quarantined.**
-Pinned exact in package.json, imported ONLY from `components/Globe/GlobeScene.ts`, which is
-itself loaded via a runtime `import()` from `Globe.tsx` when the globe nears the viewport.
-It must never appear in the server bundle or the initial route chunk (`grep` the route
-chunk for `SphereGeometry` after a build if in doubt). `Globe.tsx` falls back to the old
-`FlightArc.tsx` when WebGL/textures are unavailable — do not delete FlightArc.
+**0. `cesium` is the one rendering dependency, and it stays quarantined.**
+Imported ONLY from `components/Globe/CesiumGlobe.ts`, which is itself loaded via a runtime
+`import()` from `Globe.tsx` when the globe nears the viewport. Workers, widgets.css and
+Cesium.js load from the pinned jsDelivr CDN (`lib/cesium-cdn.ts`) so a missing
+`public/cesium` or a Vercel SSO cookie cannot 302 the Web Workers. FlightArc is ONLY for
+no-WebGL / saveData — a Cesium exception must not swap to the 2D arc. No ion token is
+required; optional Google Photorealistic 3D Tiles stay off unless
+`NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY` is set.
 
 **1. No time-zone library. Ever.**
 `lib/tz.ts` uses `Intl` only, which reads the IANA database already inside Node and every

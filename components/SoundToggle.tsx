@@ -22,7 +22,8 @@ export default function SoundToggle({ onLabel, offLabel }: { onLabel: string; of
   return (
     <button className="soundbtn" onClick={toggle} aria-pressed={on}
       aria-label={on ? onLabel : offLabel} title={on ? onLabel : offLabel}>
-      {on ? "🔊" : "🔇"}
+      <span aria-hidden="true">{on ? "🔊" : "🔇"}</span>
+      <span className="ctrllabel">{on ? onLabel : offLabel}</span>
     </button>
   );
 }
