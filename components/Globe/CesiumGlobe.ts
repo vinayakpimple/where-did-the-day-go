@@ -216,6 +216,12 @@ export async function createGlobeScene(
   sscc.enableLook = false;
   sscc.minimumZoomDistance = 12_000;
   sscc.maximumZoomDistance = 4.2e7;
+  // Pinch / right-drag zoom only. Wheel on the canvas must not steal the
+  // document scroll (and the pair page no longer has a leftover strip to jump).
+  sscc.zoomEventTypes = [
+    Cesium.CameraEventType.PINCH,
+    Cesium.CameraEventType.RIGHT_DRAG,
+  ];
 
   try {
     const tileset = await Cesium.createGooglePhotorealistic3DTileset();

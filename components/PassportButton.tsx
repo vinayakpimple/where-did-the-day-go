@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  getPassport, getQuizStats, citiesVisited, PASSPORT_EVENT, type Passport, type QuizStats,
+  getPassport, getQuizStats, citiesVisited, PASSPORT_EVENT, OPEN_PASSPORT_EVENT,
+  type Passport, type QuizStats,
 } from "@/lib/passport";
 import { t, type Messages } from "@/lib/i18n";
 
@@ -29,6 +30,12 @@ export default function PassportButton({ msgs, locale, totalCities }: {
     window.addEventListener(PASSPORT_EVENT, refresh);
     return () => window.removeEventListener(PASSPORT_EVENT, refresh);
   }, [refresh]);
+
+  useEffect(() => {
+    const open = () => setOpen(true);
+    window.addEventListener(OPEN_PASSPORT_EVENT, open);
+    return () => window.removeEventListener(OPEN_PASSPORT_EVENT, open);
+  }, []);
 
   useEffect(() => {
     if (!open) return;

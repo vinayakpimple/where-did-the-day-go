@@ -6,8 +6,11 @@ import { t, type Messages } from "@/lib/i18n";
 
 /** Shown after the first correct quiz answer on this pair. */
 export default function StampBook({
-  slug, fromName, toName, msgs, locale,
-}: { slug: string; fromName: string; toName: string; msgs: Messages; locale: string }) {
+  slug, fromName, toName, msgs, locale, glow = false, nextLabel, onNext,
+}: {
+  slug: string; fromName: string; toName: string; msgs: Messages; locale: string;
+  glow?: boolean; nextLabel?: string; onNext?: () => void;
+}) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const check = () => setReady(Boolean(getPassport().stamps[slug]));
@@ -17,7 +20,7 @@ export default function StampBook({
   }, [slug]);
   if (!ready) return null;
   return (
-    <div className="stampbook" aria-live="polite">
+    <div className="stampbook" aria-live="polite" data-glow={glow || undefined}>
       <p className="playcap">{t(msgs, "quiz.stamped")}</p>
       <div className="stamp" style={{ rotate: "-2deg" }}>
         <div className="stampcities">
@@ -29,6 +32,11 @@ export default function StampBook({
           {new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date())}
         </div>
       </div>
+      {nextLabel && onNext && (
+        <button type="button" className="hud-go hud-go-dock" data-glow="true" onClick={onNext}>
+          {nextLabel}
+        </button>
+      )}
     </div>
   );
 }

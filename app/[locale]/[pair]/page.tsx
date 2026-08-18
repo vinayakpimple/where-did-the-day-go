@@ -116,100 +116,99 @@ export default async function RoutePage({ params }: Props) {
         halfHour={halfHour}
         dstKey={f.dstKey}
         fromName={from.name} toName={to.name}
-      />
-
-      <details className="grownups">
-        <summary>{t(msgs, "play.grownups")}</summary>
-        <div className="rule" />
-        <h2>{t(msgs, "why.title")}</h2>
-        <div className="whys" style={{ marginTop: 12 }}>
-          <div className="why">
-            <div className="ic">🕠</div>
-            <h3>{t(msgs, "why.halfHour.title")}</h3>
-            <p>{t(msgs, "why.halfHour.body")}</p>
-          </div>
-          <div className="why">
-            <div className="ic">🗺️</div>
-            <h3>{t(msgs, "why.oneZone.title")}</h3>
-            <p>{t(msgs, "why.oneZone.body")}</p>
-          </div>
-          <div className="why">
-            <div className="ic">🔁</div>
-            <h3>{t(msgs, "why.dst.title")}</h3>
-            <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
-          </div>
-        </div>
-
-        <section className="card" style={{ marginTop: 16 }}>
-          <div className="kicker">{t(msgs, "jetlag.kicker")}</div>
-          <h2>{t(msgs, "jetlag.title")}</h2>
-          <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel })}</p>
-          <div className="tips">
-            {[1, 2, 3, 4].map((n) => (
-              <div className="tip" key={n}>
-                <span className="n">{n}</span>
-                <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
+        extras={
+          <>
+            <h2>{t(msgs, "why.title")}</h2>
+            <div className="whys" style={{ marginTop: 12 }}>
+              <div className="why">
+                <div className="ic">🕠</div>
+                <h3>{t(msgs, "why.halfHour.title")}</h3>
+                <p>{t(msgs, "why.halfHour.body")}</p>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="why">
+                <div className="ic">🗺️</div>
+                <h3>{t(msgs, "why.oneZone.title")}</h3>
+                <p>{t(msgs, "why.oneZone.body")}</p>
+              </div>
+              <div className="why">
+                <div className="ic">🔁</div>
+                <h3>{t(msgs, "why.dst.title")}</h3>
+                <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
+              </div>
+            </div>
 
-        <section className="card faq">
-          <h2>{t(msgs, "faq.title")}</h2>
-          {faqs.map((x, i) => (
-            <details key={i}>
-              <summary>{x.q}</summary>
-              <p>{x.a}</p>
-            </details>
-          ))}
-        </section>
+            <section className="card" style={{ marginTop: 16 }}>
+              <div className="kicker">{t(msgs, "jetlag.kicker")}</div>
+              <h2>{t(msgs, "jetlag.title")}</h2>
+              <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel })}</p>
+              <div className="tips">
+                {[1, 2, 3, 4].map((n) => (
+                  <div className="tip" key={n}>
+                    <span className="n">{n}</span>
+                    <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-        <section className="card">
-          <h2>{t(msgs, "table.title")}</h2>
-          <p className="note">{t(msgs, "table.note")}</p>
-          <div className="tablesplit">
-            {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
-              <table key={hi}>
-                <thead>
-                  <tr>
-                    <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
-                    <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {half.map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.from}</td>
-                      <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ))}
-          </div>
-        </section>
-      </details>
+            <section className="card faq">
+              <h2>{t(msgs, "faq.title")}</h2>
+              {faqs.map((x, i) => (
+                <details key={i}>
+                  <summary>{x.q}</summary>
+                  <p>{x.a}</p>
+                </details>
+              ))}
+            </section>
 
-      <div className="rule" />
-      <h2>{t(msgs, "nearby.title")}</h2>
-      <div style={{ marginTop: 14 }}>
-        <div className="kicker">{t(msgs, "nearby.fromCity", { city: from.name })}</div>
-        <div className="linkgrid">
-          {relatedFrom.map((c) => (
-            <Link key={c.slug} href={`/${locale}/${pairSlug(from.slug, c.slug)}`}>
-              {from.name} → {c.name}<span className="sub">{c.country}</span>
-            </Link>
-          ))}
-        </div>
-        <div className="kicker" style={{ marginTop: 20 }}>{t(msgs, "nearby.toCity", { city: to.name })}</div>
-        <div className="linkgrid">
-          {relatedTo.map((c) => (
-            <Link key={c.slug} href={`/${locale}/${pairSlug(c.slug, to.slug)}`}>
-              {c.name} → {to.name}<span className="sub">{c.country}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+            <section className="card">
+              <h2>{t(msgs, "table.title")}</h2>
+              <p className="note">{t(msgs, "table.note")}</p>
+              <div className="tablesplit">
+                {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
+                  <table key={hi}>
+                    <thead>
+                      <tr>
+                        <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
+                        <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {half.map((r, i) => (
+                        <tr key={i}>
+                          <td>{r.from}</td>
+                          <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ))}
+              </div>
+            </section>
+
+            <div className="rule" />
+            <h2>{t(msgs, "nearby.title")}</h2>
+            <div style={{ marginTop: 14 }}>
+              <div className="kicker">{t(msgs, "nearby.fromCity", { city: from.name })}</div>
+              <div className="linkgrid">
+                {relatedFrom.map((c) => (
+                  <Link key={c.slug} href={`/${locale}/${pairSlug(from.slug, c.slug)}`}>
+                    {from.name} → {c.name}<span className="sub">{c.country}</span>
+                  </Link>
+                ))}
+              </div>
+              <div className="kicker" style={{ marginTop: 20 }}>{t(msgs, "nearby.toCity", { city: to.name })}</div>
+              <div className="linkgrid">
+                {relatedTo.map((c) => (
+                  <Link key={c.slug} href={`/${locale}/${pairSlug(c.slug, to.slug)}`}>
+                    {c.name} → {to.name}<span className="sub">{c.country}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </>
+        }
+      />
     </>
   );
 }
