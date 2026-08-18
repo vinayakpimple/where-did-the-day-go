@@ -258,18 +258,39 @@ footer b{color:var(--ink2)}
 .soundbtn:hover,.passbtn:hover{border-color:var(--acc)}
 .passcount{font-size:13px;font-weight:750;color:var(--acc)}
 
-/* ---------- passport drawer & stamps ---------- */
-.drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40}
-.drawer{position:fixed;top:0;bottom:0;inset-inline-end:0;width:min(420px,92vw);z-index:41;
-  background:var(--surface);border-inline-start:1px solid var(--border);padding:22px;overflow-y:auto}
-.drawerhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.drawerhead h2{margin:0}
+/* ---------- passport sheet & stamps ---------- */
+/* Portaled to body. Pair-page topbar uses backdrop-filter, which would otherwise
+   trap position:fixed to the header and clip the book width-wise. */
+.pass-sheet{
+  --pass-sheet-w:400px;
+  position:fixed;top:var(--map-topbar-h,0px);bottom:0;inset-inline-end:0;
+  width:min(var(--pass-sheet-w),100vw);z-index:41;
+  background:var(--surface);border-inline-start:1px solid var(--border);
+  padding:18px 20px 28px;overflow-x:hidden;overflow-y:auto;
+  box-shadow:-18px 0 40px rgba(0,0,0,.35);
+  transform:translateX(100%);visibility:hidden;pointer-events:none;
+  transition:transform .28s ease,visibility 0s linear .28s;
+}
+[dir="rtl"] .pass-sheet{transform:translateX(-100%);box-shadow:18px 0 40px rgba(0,0,0,.35)}
+.pass-sheet.is-open{
+  transform:translateX(0);visibility:visible;pointer-events:auto;
+  transition:transform .28s ease,visibility 0s;
+}
+/* Below the thin header AND the SF/Delhi clock pills — those stay on the globe. */
+body:has(.inflight-map) .pass-sheet{top:calc(var(--map-topbar-h,60px) + 96px)}
+.pass-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pass-sheet-head h2,.pass-sheet .note{margin:0;overflow-wrap:anywhere}
+.pass-sheet .note{margin:0 0 10px}
 .stampgrid{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
-.stamp{border:2px dashed var(--border);border-radius:12px;padding:12px 14px;background:var(--surface2)}
+.stamp{border:2px dashed var(--border);border-radius:12px;padding:12px 14px;background:var(--surface2);overflow-x:hidden}
+.stampcities,.stampmeta{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
 .stampcities{font-size:15px}
 .stampmeta{color:var(--muted);font-size:13px;margin-top:4px}
 .stampstars{color:var(--del)}
 .passprivacy{font-size:12.5px;opacity:.8}
+@media (max-width:640px){
+  .pass-sheet{width:100vw}
+}
 
 /* ---------- split hour table ---------- */
 .tablesplit{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
@@ -283,7 +304,7 @@ footer b{color:var(--ink2)}
   .confetti i{animation:none;display:none}
   .confetti-star{display:block;position:absolute;left:50%;top:20%;font-size:40px;
     transform:translateX(-50%);animation:star-fade 1.2s ease-out forwards}
-  .qopt,.stamp{transition:none}
+  .qopt,.stamp,.pass-sheet{transition:none}
   .stamp{rotate:0deg !important}
 }
 @keyframes star-fade{0%{opacity:1}100%{opacity:0}}
@@ -339,7 +360,7 @@ body:has(.inflight-map) footer{display:none}
 
 .hud-clocks{
   position:absolute;top:54px;left:10px;right:10px;
-  display:flex;justify-content:space-between;gap:8px;pointer-events:none;z-index:4;
+  display:flex;justify-content:space-between;gap:8px;pointer-events:none;z-index:6;
 }
 .clockpill{
   pointer-events:none;padding:6px 10px;border-radius:99px;
@@ -396,13 +417,20 @@ body:has(.inflight-map) footer{display:none}
 .hud-quiz .qopt .face2{width:min(48px,100%)}
 .hud-quiz .quizresult{min-height:18px;margin-top:6px}
 
-/* Left of the clocks, below the origin pill — never over the destination clock. */
+/* Right-edge sheet, below the clock pills — never over SF/Delhi. Globe stays full-bleed. */
 .inflight-map .stampbook{
-  position:absolute;left:10px;right:auto;top:96px;width:min(220px,46vw);z-index:4;
-  background:rgba(8,12,23,.72);border:1px solid var(--border);border-radius:14px;
-  padding:8px 10px;backdrop-filter:blur(12px);
+  position:absolute;inset-inline-end:0;left:auto;top:96px;bottom:0;
+  width:min(400px,100%);z-index:4;
+  background:rgba(8,12,23,.86);border:0;border-inline-start:1px solid var(--border);
+  border-radius:0;padding:16px 18px 20px;backdrop-filter:blur(12px);
+  overflow-x:hidden;overflow-y:auto;
+  animation:pass-sheet-in .28s ease;
 }
-.inflight-map .stampbook .playcap{font-size:13px;margin:0 0 6px}
+.inflight-map .stampbook .playcap{font-size:15px;margin:0 0 10px;overflow-wrap:anywhere}
+.inflight-map .stampbook .hud-go-dock{white-space:normal;overflow-wrap:anywhere}
+@keyframes pass-sheet-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes pass-sheet-in-rtl{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+[dir="rtl"] .inflight-map .stampbook{animation-name:pass-sheet-in-rtl}
 
 .hud-slider{
   --thumbw:44px;
@@ -444,9 +472,10 @@ body:has(.inflight-map) footer{display:none}
 [data-glow]{animation:hud-glow 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){
   [data-glow]{animation:none}
+  .inflight-map .stampbook{animation:none}
 }
 @media (max-width:640px){
   .hud-views{left:10px;right:28%;transform:none;max-width:64vw;overflow-x:auto}
   .hud-grownups-btn{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .inflight-map .stampbook{top:96px;bottom:auto;width:min(200px,42vw)}
+  .inflight-map .stampbook{top:96px;bottom:0;width:100%}
 }

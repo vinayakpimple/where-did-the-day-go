@@ -1,6 +1,6 @@
 /**
  * The passport: stamps collected per city-pair, stored only in localStorage.
- * No network, no cookies, no identifiers — the drawer says so. Every read is
+ * No network, no cookies, no identifiers — the sheet says so. Every read is
  * versioned and wrapped in try/catch; anything unexpected resets to empty
  * rather than crashing.
  */
