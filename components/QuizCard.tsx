@@ -77,7 +77,10 @@ export default function QuizCard({
     }
   };
 
-  const rollChip = q.rolls === 1 ? t(msgs, "ribbon.nextDay") : q.rolls === -1 ? t(msgs, "ribbon.prevDay") : "";
+  const resultKey = !answered ? ""
+    : wasRight
+      ? (q.rolls === 1 ? "quiz.correct.nextDay" : q.rolls === -1 ? "quiz.correct.prevDay" : "quiz.correct")
+      : (q.rolls === 1 ? "quiz.wrong.nextDay" : q.rolls === -1 ? "quiz.wrong.prevDay" : "quiz.wrong");
 
   // Split on bracketed sentinels rather than spaces — CJK locales have no spaces.
   const questionParts = t(msgs, "quiz.question", {
@@ -98,18 +101,15 @@ export default function QuizCard({
           <button key={i} className="qopt"
             data-state={answered ? (i === q.correctIdx ? "correct" : i === picked ? "wrong" : "idle") : "idle"}
             disabled={answered}
-            aria-label={`${timeStr(opt)}${i === q.correctIdx && rollChip ? ` (${rollChip})` : ""}`}
+            aria-label={timeStr(opt)}
             onClick={() => choose(i)}>
             <MiniClock minutes={opt} />
             <span className="qtime" style={{ direction: "ltr" }}>{timeStr(opt)}</span>
-            {rollChip && i === q.correctIdx && answered && <span className="qchip">{rollChip}</span>}
           </button>
         ))}
       </div>
       <div aria-live="polite" className="quizresult">
-        {answered && (wasRight
-          ? t(msgs, "quiz.correct", { time: timeStr(q.answerMin) })
-          : t(msgs, "quiz.wrong", { time: timeStr(q.answerMin) }))}
+        {answered && resultKey && t(msgs, resultKey, { time: timeStr(q.answerMin) })}
         {starLine && ` ${t(msgs, "quiz.starEarned")}`}
       </div>
       <div className="quizfoot">

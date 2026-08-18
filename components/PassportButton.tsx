@@ -51,7 +51,9 @@ export default function PassportButton({ msgs, locale, totalCities }: {
     <>
       <button ref={openerRef} className="passbtn" onClick={() => setOpen(true)}
         aria-expanded={open} aria-label={t(msgs, "passport.button")}>
-        🛂{visited > 0 && <span className="passcount">{nf.format(visited)}</span>}
+        <span aria-hidden="true">🛂</span>
+        <span className="ctrllabel">{t(msgs, "passport.button")}</span>
+        {visited > 0 && <span className="passcount">{nf.format(visited)}</span>}
       </button>
 
       {open && (

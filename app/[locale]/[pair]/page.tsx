@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { parsePair, pairSlug, topPairs, RANKED, getCity } from "@/lib/cities";
+import { parsePair, pairSlug, topPairs, RANKED } from "@/lib/cities";
 import { LOCALES, HREFLANG, isLocale, getMessages, t } from "@/lib/i18n";
 import { routeFacts } from "@/lib/route-facts";
 import { SITE_URL, PRERENDER_PAIRS } from "@/lib/site";
+import { clock12, weekdayName, humanGap } from "@/lib/tz";
 import LiveClocks from "@/components/LiveClocks";
 import DayRibbon from "@/components/DayRibbon";
 import GlobePanel from "@/components/GlobePanel";
@@ -68,9 +69,43 @@ export default async function RoutePage({ params }: Props) {
   const subKey = f.gap === 0 ? "route.subtitle.same" : f.gap > 0 ? "route.subtitle.ahead" : "route.subtitle.behind";
   const subtitle = t(msgs, subKey, { from: from.name, to: to.name, gap: f.gapLabel });
 
+  const fromTime = clock12(f.nowParts.from.hour, f.nowParts.from.minute, locale);
+  const toTime = clock12(f.nowParts.to.hour, f.nowParts.to.minute, locale);
+  const fromDay = weekdayName(f.nowParts.from, locale);
+  const toDay = weekdayName(f.nowParts.to, locale);
+  const sameDay =
+    f.nowParts.from.day === f.nowParts.to.day &&
+    f.nowParts.from.month === f.nowParts.to.month &&
+    f.nowParts.from.year === f.nowParts.to.year;
+  const toLater =
+    f.nowParts.to.year > f.nowParts.from.year ||
+    (f.nowParts.to.year === f.nowParts.from.year &&
+      (f.nowParts.to.month > f.nowParts.from.month ||
+        (f.nowParts.to.month === f.nowParts.from.month && f.nowParts.to.day > f.nowParts.from.day)));
+
+  const units = {
+    hour: t(msgs, "unit.hour"), hours: t(msgs, "unit.hours"),
+    minute: t(msgs, "unit.minute"), minutes: t(msgs, "unit.minutes"),
+  };
+  // Whole days stay in the number — do not take % 1440 (invariant 2).
+  const clockMoved = humanGap(f.flightMin + f.gap, units);
+  const flightWords = humanGap(f.flightMin, units);
+
+  const dateLine = sameDay
+    ? t(msgs, "hero.dates.same", { day: fromDay })
+    : t(msgs, toLater ? "hero.dates.toAhead" : "hero.dates.fromAhead", {
+      from: from.name, to: to.name, fromDay, toDay,
+    });
+  const jumpLine = f.gap === 0
+    ? t(msgs, "hero.jump.flat", { hours: flightWords })
+    : t(msgs, f.gap > 0 ? "hero.jump.east" : "hero.jump.west", {
+      hours: flightWords, clockMoved,
+    });
+
+  // FAQ #1 is the gap only. dstNote used to be glued on and leaked "Yes."
   const faqs = [
     { q: t(msgs, "faq.q1", { from: from.name, to: to.name }),
-      a: t(msgs, "faq.a1", { from: from.name, to: to.name, gap: f.gapLabel, direction: f.direction, dstNote: f.dstNote }) },
+      a: t(msgs, "faq.a1", { from: from.name, to: to.name, gap: f.gapLabel, direction: f.direction }) },
     { q: t(msgs, "faq.q2", { from: from.name, to: to.name }),
       a: t(msgs, "faq.a2", { from: from.name, to: to.name, noonTime: f.noonToLabel }) },
     { q: t(msgs, "faq.q3", { from: from.name, to: to.name }),
@@ -98,8 +133,12 @@ export default async function RoutePage({ params }: Props) {
     },
   ];
 
-  const relatedFrom = RANKED.filter((c) => c.slug !== from.slug && c.tz !== from.tz).slice(0, 8);
-  const relatedTo = RANKED.filter((c) => c.slug !== to.slug && c.tz !== to.tz).slice(0, 8);
+  const relatedFrom = RANKED
+    .filter((c) => c.slug !== from.slug && c.slug !== to.slug && c.tz !== from.tz)
+    .slice(0, 8);
+  const relatedTo = RANKED
+    .filter((c) => c.slug !== to.slug && c.slug !== from.slug && c.tz !== to.tz)
+    .slice(0, 8);
 
   const ribbonNote =
     Math.abs(f.gap % 60) === 30 ? t(msgs, "ribbon.note.halfHour")
@@ -111,89 +150,96 @@ export default async function RoutePage({ params }: Props) {
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="eyebrow">{from.country} → {to.country}</div>
-      <h1>{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
-      <p className="sublede">{subtitle}</p>
-      <p className="dek">
-        {from.name} {f.fromUtc} · {to.name} {f.toUtc}
-        {" — "}
-        <Link href={`/${locale}/${pairSlug(to.slug, from.slug)}`}>
-          {t(msgs, "route.reverse", { from: from.name, to: to.name })}
-        </Link>
-      </p>
+      <header className="hero">
+        <div className="eyebrow">{from.country} → {to.country}</div>
+        <h1>{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
+        <p className="sublede">{subtitle}</p>
+        <p className="herotimes">
+          <span className="heroleg">
+            <b style={{ color: "var(--sf)" }}>{from.name}</b>
+            {" "}
+            <span className="herotime" dir="ltr">{fromTime}</span>
+          </span>
+          <span className="herodot" aria-hidden="true">·</span>
+          <span className="heroleg">
+            <b style={{ color: "var(--del)" }}>{to.name}</b>
+            {" "}
+            <span className="herotime" dir="ltr">{toTime}</span>
+          </span>
+        </p>
+        <p className="herojump">
+          {dateLine}{" "}{jumpLine}
+        </p>
+        <p className="dek hero-meta">
+          {from.name} {f.fromUtc} · {to.name} {f.toUtc}
+          {" — "}
+          <Link href={`/${locale}/${pairSlug(to.slug, from.slug)}`}>
+            {t(msgs, "route.reverse", { from: from.name, to: to.name })}
+          </Link>
+        </p>
+        <LiveClocks from={from} to={to} msgs={msgs} locale={locale} />
+      </header>
 
-      <section className="card">
-        <div className="kicker">{t(msgs, "arc.kicker", { km: f.kmLabel })}</div>
-        <h2>{t(msgs, "sim.title")}</h2>
-        <p className="note">{t(msgs, "sim.note")}</p>
+      <section className="card trip" aria-labelledby="trip-title">
+        <h2 id="trip-title">{t(msgs, "sim.title")}</h2>
+        <p className="note">
+          {t(msgs, "arc.distance", { km: f.kmLabel, hours: f.flightLabel })}
+          {". "}
+          {t(msgs, "sim.note")}
+        </p>
         <GlobePanel
           from={{ name: from.name, tz: from.tz, lat: from.lat, lon: from.lon }}
           to={{ name: to.name, tz: to.tz, lat: to.lat, lon: to.lon }}
           defaultMinutes={f.flightMin}
           km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
-          polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
+          polar={f.isPolar ? `${f.peakLat}°` : null}
           msgs={msgs} locale={locale} />
-        <p className="note">
+        <p className="note" style={{ marginBottom: 0 }}>
           {t(msgs, "arc.note", { from: from.name, to: to.name, hours: f.flightLabel })}
           {f.isPolar ? " " + t(msgs, "arc.note.polar", { lat: String(f.peakLat) }) : ""}
-          {" "}
-          {t(msgs, "arc.schoolDays", { n: String(f.schoolDays) })}
         </p>
       </section>
 
-      <section className="card">
-        <div className="kicker">{t(msgs, "clocks.kicker")}</div>
-        <h2>{t(msgs, "clocks.title")}</h2>
-        <p className="note">{t(msgs, "clocks.note")}</p>
-        <LiveClocks from={from} to={to} msgs={msgs} locale={locale} />
-      </section>
-
-      <section className="card">
-        <div className="kicker">{t(msgs, "ribbon.kicker")}</div>
-        <h2>{t(msgs, "ribbon.title")}</h2>
+      <section className="card" aria-labelledby="ribbon-title">
+        <h2 id="ribbon-title">{t(msgs, "ribbon.title")}</h2>
         <p className="note">{t(msgs, "ribbon.note")} {ribbonNote}</p>
         <DayRibbon fromName={from.name} toName={to.name} gapMin={f.gap} msgs={msgs} locale={locale} />
       </section>
 
-      <section className="card">
-        <div className="kicker">{t(msgs, "quiz.kicker")}</div>
-        <h2>{t(msgs, "quiz.title")}</h2>
-        <QuizCard from={{ name: from.name, tz: from.tz }} to={{ name: to.name, tz: to.tz }}
-          pairSlug={pair} msgs={msgs} locale={locale} />
+      <section aria-labelledby="why-title">
+        <h2 id="why-title">{t(msgs, "why.title")}</h2>
+        <div className="whys" style={{ marginTop: 12 }}>
+          <div className="why">
+            <h3>{t(msgs, "why.halfHour.title")}</h3>
+            <p>{t(msgs, "why.halfHour.body")}</p>
+          </div>
+          <div className="why">
+            <h3>{t(msgs, "why.oneZone.title")}</h3>
+            <p>{t(msgs, "why.oneZone.body")}</p>
+          </div>
+          <div className="why">
+            <h3>{t(msgs, "why.dst.title")}</h3>
+            <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
+          </div>
+        </div>
+        <div className="card" style={{ marginTop: 16, marginBottom: 0 }}>
+          <h2>{t(msgs, "jetlag.title")}</h2>
+          <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel, from: from.name, to: to.name })}</p>
+          <div className="tips">
+            {[1, 2, 3, 4].map((n) => (
+              <div className="tip" key={n}>
+                <span className="n">{n}</span>
+                <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      <div className="rule" />
-      <h2>{t(msgs, "why.title")}</h2>
-      <div className="whys" style={{ marginTop: 12 }}>
-        <div className="why">
-          <div className="ic">🕠</div>
-          <h3>{t(msgs, "why.halfHour.title")}</h3>
-          <p>{t(msgs, "why.halfHour.body")}</p>
-        </div>
-        <div className="why">
-          <div className="ic">🗺️</div>
-          <h3>{t(msgs, "why.oneZone.title")}</h3>
-          <p>{t(msgs, "why.oneZone.body")}</p>
-        </div>
-        <div className="why">
-          <div className="ic">🔁</div>
-          <h3>{t(msgs, "why.dst.title")}</h3>
-          <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
-        </div>
-      </div>
-
-      <section className="card" style={{ marginTop: 16 }}>
-        <div className="kicker">{t(msgs, "jetlag.kicker")}</div>
-        <h2>{t(msgs, "jetlag.title")}</h2>
-        <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel })}</p>
-        <div className="tips">
-          {[1, 2, 3, 4].map((n) => (
-            <div className="tip" key={n}>
-              <span className="n">{n}</span>
-              <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
-            </div>
-          ))}
-        </div>
+      <section className="card" aria-labelledby="quiz-title">
+        <h2 id="quiz-title">{t(msgs, "quiz.title")}</h2>
+        <QuizCard from={{ name: from.name, tz: from.tz }} to={{ name: to.name, tz: to.tz }}
+          pairSlug={pair} msgs={msgs} locale={locale} />
       </section>
 
       <section className="card faq">
@@ -206,8 +252,8 @@ export default async function RoutePage({ params }: Props) {
         ))}
       </section>
 
-      <section className="card">
-        <h2>{t(msgs, "table.title")}</h2>
+      <details className="card hours">
+        <summary>{t(msgs, "table.toggle")}</summary>
         <p className="note">{t(msgs, "table.note")}</p>
         <div className="tablesplit">
           {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
@@ -229,7 +275,7 @@ export default async function RoutePage({ params }: Props) {
             </table>
           ))}
         </div>
-      </section>
+      </details>
 
       <div className="rule" />
       <h2>{t(msgs, "nearby.title")}</h2>

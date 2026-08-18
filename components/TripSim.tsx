@@ -98,11 +98,11 @@ export default function TripSim({
       <div className="tabs">
         <button className="tab" aria-pressed={outbound}
           onClick={() => { setOutbound(true); setDepMin(780); commit(); }}>
-          ✈ {t(msgs, "sim.direction.out", { from: from.name, to: to.name })}
+          {t(msgs, "sim.direction.out", { from: from.name, to: to.name })}
         </button>
         <button className="tab" aria-pressed={!outbound}
           onClick={() => { setOutbound(false); setDepMin(625); commit(); }}>
-          ✈ {t(msgs, "sim.direction.back", { from: from.name, to: to.name })}
+          {t(msgs, "sim.direction.back", { from: from.name, to: to.name })}
         </button>
       </div>
 
