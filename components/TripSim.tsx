@@ -70,27 +70,18 @@ export default function TripSim({
   if (!calc) {
     return <div className="simgrid" aria-busy="true"><div className="pod skeleton" /><div /><div className="pod skeleton" /></div>;
   }
-  const { dp, ar, zoneJump, calendar, skipped } = calc;
+  const { dp, ar, zoneJump, skipped } = calc;
 
   const fromCol = outbound ? "var(--sf)" : "var(--del)";
   const toCol = outbound ? "var(--del)" : "var(--sf)";
 
   let verdict: string;
   if (zoneJump === 0) {
-    verdict = t(msgs, "sim.verdict.same", {
-      depTime: timeStr(dp), depDay: dayStr(dp), arrTime: timeStr(ar), arrDay: dayStr(ar),
-      flight: hm(dur),
-    });
+    verdict = t(msgs, "sim.kid.same", { depDay: dayStr(dp), arrDay: dayStr(ar) });
   } else if (zoneJump > 0) {
-    verdict = t(msgs, "sim.verdict.forward", {
-      depTime: timeStr(dp), depDay: dayStr(dp), arrTime: timeStr(ar), arrDay: dayStr(ar),
-      calendar: hm(calendar), flight: hm(dur), gap: humanGap(zoneJump, units), toCity: toName,
-    });
+    verdict = t(msgs, "sim.kid.flip", { depDay: dayStr(dp), arrDay: dayStr(ar) });
   } else {
-    verdict = t(msgs, "sim.verdict.back", {
-      depTime: timeStr(dp), depDay: dayStr(dp), arrTime: timeStr(ar), arrDay: dayStr(ar),
-      calendar: hm(calendar), flight: hm(dur), gap: humanGap(zoneJump, units), toCity: toName,
-    });
+    verdict = t(msgs, "sim.kid.back", { depDay: dayStr(dp), arrDay: dayStr(ar) });
   }
 
   return (

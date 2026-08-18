@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import FlightArc from "@/components/FlightArc";
-import type { GlobeController } from "./GlobeScene";
+import type { GlobeController, GlobeView } from "./GlobeScene";
 
 type CityPoint = { name: string; lat: number; lon: number };
 
@@ -13,11 +13,12 @@ type CityPoint = { name: string; lat: number; lon: number };
  * FlightArc renders in the same box instead.
  */
 export default function Globe({
-  from, to, outbound = true, replayKey = 0, km, hoursLabel, polar,
+  from, to, outbound = true, replayKey = 0, km, hoursLabel, polar, view = "route",
 }: {
   from: CityPoint; to: CityPoint;
   outbound?: boolean; replayKey?: number;
   km: string; hoursLabel: string; polar: string | null;
+  view?: GlobeView;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);
@@ -54,6 +55,7 @@ export default function Globe({
           onFail: () => { ctrlRef.current?.dispose(); ctrlRef.current = null; setMode("fallback"); },
         });
         ctrlRef.current = ctrl;
+        ctrl.setView(view);
         const size = () => ctrl.setSize(host.clientWidth, host.clientHeight);
         size();
         const ro = new ResizeObserver(size);
@@ -85,10 +87,11 @@ export default function Globe({
 
   useEffect(() => { ctrlRef.current?.setDirection(outbound); }, [outbound]);
   useEffect(() => { if (replayKey > 0) ctrlRef.current?.flyOnce(); }, [replayKey]);
+  useEffect(() => { ctrlRef.current?.setView(view); }, [view]);
 
   if (mode === "fallback") {
     return (
-      <div className="globewrap">
+      <div className="globewrap inflight-fallback">
         <FlightArc fromName={from.name} toName={to.name} km={km} hoursLabel={hoursLabel} polar={polar} />
       </div>
     );

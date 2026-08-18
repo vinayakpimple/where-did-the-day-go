@@ -14,11 +14,12 @@ type CityFull = { name: string; tz: string; lat: number; lon: number };
  * if sound is on).
  */
 export default function GlobePanel({
-  from, to, defaultMinutes, km, hoursLabel, polar, msgs, locale,
+  from, to, defaultMinutes, km, hoursLabel, polar, msgs, locale, onInteract,
 }: {
   from: CityFull; to: CityFull; defaultMinutes: number;
   km: string; hoursLabel: string; polar: string | null;
   msgs: Messages; locale: string;
+  onInteract?: () => void;
 }) {
   const [flight, setFlight] = useState<FlightState>({
     outbound: true, depMin: 780, durMin: defaultMinutes, changeId: 0,
@@ -26,7 +27,10 @@ export default function GlobePanel({
 
   const onFlight = (s: FlightState) => {
     setFlight((prev) => {
-      if (s.changeId > prev.changeId) sound.whoosh();
+      if (s.changeId > prev.changeId) {
+        sound.whoosh();
+        onInteract?.();
+      }
       return s;
     });
   };

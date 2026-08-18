@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { parsePair, pairSlug, topPairs, RANKED, getCity } from "@/lib/cities";
+import { parsePair, pairSlug, topPairs, RANKED } from "@/lib/cities";
 import { LOCALES, HREFLANG, isLocale, getMessages, t } from "@/lib/i18n";
 import { routeFacts } from "@/lib/route-facts";
 import { SITE_URL, PRERENDER_PAIRS } from "@/lib/site";
-import LiveClocks from "@/components/LiveClocks";
-import DayRibbon from "@/components/DayRibbon";
-import GlobePanel from "@/components/GlobePanel";
-import QuizCard from "@/components/QuizCard";
-import PassportStamp from "@/components/PassportStamp";
+import PlayLoop from "@/components/PlayLoop";
 
 /** Long-tail pairs render on first request, then stay cached. */
 export const dynamicParams = true;
@@ -65,9 +61,6 @@ export default async function RoutePage({ params }: Props) {
   const msgs = await getMessages(locale);
   const f = routeFacts(from, to, locale, msgs);
 
-  const subKey = f.gap === 0 ? "route.subtitle.same" : f.gap > 0 ? "route.subtitle.ahead" : "route.subtitle.behind";
-  const subtitle = t(msgs, subKey, { from: from.name, to: to.name, gap: f.gapLabel });
-
   const faqs = [
     { q: t(msgs, "faq.q1", { from: from.name, to: to.name }),
       a: t(msgs, "faq.a1", { from: from.name, to: to.name, gap: f.gapLabel, direction: f.direction, dstNote: f.dstNote }) },
@@ -100,136 +93,97 @@ export default async function RoutePage({ params }: Props) {
 
   const relatedFrom = RANKED.filter((c) => c.slug !== from.slug && c.tz !== from.tz).slice(0, 8);
   const relatedTo = RANKED.filter((c) => c.slug !== to.slug && c.tz !== to.tz).slice(0, 8);
-
-  const ribbonNote =
-    Math.abs(f.gap % 60) === 30 ? t(msgs, "ribbon.note.halfHour")
-      : Math.abs(f.gap % 60) === 45 ? t(msgs, "ribbon.note.quarterHour")
-        : "";
+  const halfHour = Math.abs(f.gap % 60) === 30;
 
   return (
     <>
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="eyebrow">{from.country} → {to.country}</div>
-      <h1>{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
-      <p className="sublede">{subtitle}</p>
-      <p className="dek">
-        {from.name} {f.fromUtc} · {to.name} {f.toUtc}
-        {" — "}
-        <Link href={`/${locale}/${pairSlug(to.slug, from.slug)}`}>
-          {t(msgs, "route.reverse", { from: from.name, to: to.name })}
-        </Link>
-      </p>
+      <h1 className="sr-only">{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
+      <PlayLoop
+        from={{ name: from.name, tz: from.tz, lat: from.lat, lon: from.lon, country: from.country, cc: from.cc }}
+        to={{ name: to.name, tz: to.tz, lat: to.lat, lon: to.lon, country: to.country, cc: to.cc }}
+        pairSlug={pair}
+        msgs={msgs} locale={locale}
+        km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
+        polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
+        halfHour={halfHour}
+        dstKey={f.dstKey}
+        fromName={from.name} toName={to.name}
+      />
 
-      <section className="card">
-        <div className="kicker">{t(msgs, "arc.kicker", { km: f.kmLabel })}</div>
-        <h2>{t(msgs, "sim.title")}</h2>
-        <p className="note">{t(msgs, "sim.note")}</p>
-        <GlobePanel
-          from={{ name: from.name, tz: from.tz, lat: from.lat, lon: from.lon }}
-          to={{ name: to.name, tz: to.tz, lat: to.lat, lon: to.lon }}
-          defaultMinutes={f.flightMin}
-          km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
-          polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
-          msgs={msgs} locale={locale} />
-        <p className="note">
-          {t(msgs, "arc.note", { from: from.name, to: to.name, hours: f.flightLabel })}
-          {f.isPolar ? " " + t(msgs, "arc.note.polar", { lat: String(f.peakLat) }) : ""}
-          {" "}
-          {t(msgs, "arc.schoolDays", { n: String(f.schoolDays) })}
-        </p>
-      </section>
-
-      <section className="card">
-        <div className="kicker">{t(msgs, "clocks.kicker")}</div>
-        <h2>{t(msgs, "clocks.title")}</h2>
-        <p className="note">{t(msgs, "clocks.note")}</p>
-        <LiveClocks from={from} to={to} msgs={msgs} locale={locale} />
-      </section>
-
-      <section className="card">
-        <div className="kicker">{t(msgs, "ribbon.kicker")}</div>
-        <h2>{t(msgs, "ribbon.title")}</h2>
-        <p className="note">{t(msgs, "ribbon.note")} {ribbonNote}</p>
-        <DayRibbon fromName={from.name} toName={to.name} gapMin={f.gap} msgs={msgs} locale={locale} />
-      </section>
-
-      <section className="card">
-        <div className="kicker">{t(msgs, "quiz.kicker")}</div>
-        <h2>{t(msgs, "quiz.title")}</h2>
-        <QuizCard from={{ name: from.name, tz: from.tz }} to={{ name: to.name, tz: to.tz }}
-          pairSlug={pair} msgs={msgs} locale={locale} />
-      </section>
-
-      <div className="rule" />
-      <h2>{t(msgs, "why.title")}</h2>
-      <div className="whys" style={{ marginTop: 12 }}>
-        <div className="why">
-          <div className="ic">🕠</div>
-          <h3>{t(msgs, "why.halfHour.title")}</h3>
-          <p>{t(msgs, "why.halfHour.body")}</p>
+      <details className="grownups">
+        <summary>{t(msgs, "play.grownups")}</summary>
+        <div className="rule" />
+        <h2>{t(msgs, "why.title")}</h2>
+        <div className="whys" style={{ marginTop: 12 }}>
+          <div className="why">
+            <div className="ic">🕠</div>
+            <h3>{t(msgs, "why.halfHour.title")}</h3>
+            <p>{t(msgs, "why.halfHour.body")}</p>
+          </div>
+          <div className="why">
+            <div className="ic">🗺️</div>
+            <h3>{t(msgs, "why.oneZone.title")}</h3>
+            <p>{t(msgs, "why.oneZone.body")}</p>
+          </div>
+          <div className="why">
+            <div className="ic">🔁</div>
+            <h3>{t(msgs, "why.dst.title")}</h3>
+            <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
+          </div>
         </div>
-        <div className="why">
-          <div className="ic">🗺️</div>
-          <h3>{t(msgs, "why.oneZone.title")}</h3>
-          <p>{t(msgs, "why.oneZone.body")}</p>
-        </div>
-        <div className="why">
-          <div className="ic">🔁</div>
-          <h3>{t(msgs, "why.dst.title")}</h3>
-          <p>{t(msgs, f.dstKey === "both" ? "why.dst.bodyBoth" : f.dstKey === "neither" ? "why.dst.bodyNeither" : "why.dst.body")}</p>
-        </div>
-      </div>
 
-      <section className="card" style={{ marginTop: 16 }}>
-        <div className="kicker">{t(msgs, "jetlag.kicker")}</div>
-        <h2>{t(msgs, "jetlag.title")}</h2>
-        <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel })}</p>
-        <div className="tips">
-          {[1, 2, 3, 4].map((n) => (
-            <div className="tip" key={n}>
-              <span className="n">{n}</span>
-              <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
-            </div>
+        <section className="card" style={{ marginTop: 16 }}>
+          <div className="kicker">{t(msgs, "jetlag.kicker")}</div>
+          <h2>{t(msgs, "jetlag.title")}</h2>
+          <p className="note">{t(msgs, "jetlag.note", { gap: f.gapLabel })}</p>
+          <div className="tips">
+            {[1, 2, 3, 4].map((n) => (
+              <div className="tip" key={n}>
+                <span className="n">{n}</span>
+                <p><b>{t(msgs, `jetlag.tip${n}.title`)}</b> {t(msgs, `jetlag.tip${n}.body`)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="card faq">
+          <h2>{t(msgs, "faq.title")}</h2>
+          {faqs.map((x, i) => (
+            <details key={i}>
+              <summary>{x.q}</summary>
+              <p>{x.a}</p>
+            </details>
           ))}
-        </div>
-      </section>
+        </section>
 
-      <section className="card faq">
-        <h2>{t(msgs, "faq.title")}</h2>
-        {faqs.map((x, i) => (
-          <details key={i} open={i === 0}>
-            <summary>{x.q}</summary>
-            <p>{x.a}</p>
-          </details>
-        ))}
-      </section>
-
-      <section className="card">
-        <h2>{t(msgs, "table.title")}</h2>
-        <p className="note">{t(msgs, "table.note")}</p>
-        <div className="tablesplit">
-          {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
-            <table key={hi}>
-              <thead>
-                <tr>
-                  <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
-                  <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {half.map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.from}</td>
-                    <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
+        <section className="card">
+          <h2>{t(msgs, "table.title")}</h2>
+          <p className="note">{t(msgs, "table.note")}</p>
+          <div className="tablesplit">
+            {[f.hourTable.slice(0, 12), f.hourTable.slice(12)].map((half, hi) => (
+              <table key={hi}>
+                <thead>
+                  <tr>
+                    <th>{t(msgs, "table.fromHeader", { city: from.name })}</th>
+                    <th>{t(msgs, "table.toHeader", { city: to.name })}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ))}
-        </div>
-      </section>
+                </thead>
+                <tbody>
+                  {half.map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.from}</td>
+                      <td>{r.to}{r.rolls ? ` (${t(msgs, "ribbon.nextDay")})` : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ))}
+          </div>
+        </section>
+      </details>
 
       <div className="rule" />
       <h2>{t(msgs, "nearby.title")}</h2>
@@ -251,8 +205,6 @@ export default async function RoutePage({ params }: Props) {
           ))}
         </div>
       </div>
-
-      <PassportStamp slug={pair} fromName={from.name} toName={to.name} />
     </>
   );
 }
