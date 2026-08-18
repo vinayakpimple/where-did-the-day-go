@@ -381,3 +381,7 @@ body:has(.inflight-map) footer{display:none}
 .grownups>summary{cursor:pointer;font-weight:750;font-size:16px;padding:10px 0;list-style:none}
 .grownups>summary::-webkit-details-marker{display:none}
 .grownups[open]{padding-bottom:16px}
+
+.globewrap .cesium-viewer,.globewrap .cesium-widget,.globewrap .cesium-widget canvas{width:100%;height:100%;position:absolute;inset:0}
+.globecredit{position:absolute;left:8px;bottom:8px;z-index:2;max-width:46%;font-size:10px;opacity:.75}
+.inflight-map .globecredit{bottom:56px}

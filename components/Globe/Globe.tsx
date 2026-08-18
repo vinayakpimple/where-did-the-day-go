@@ -2,15 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import FlightArc from "@/components/FlightArc";
-import type { GlobeController, GlobeView } from "./GlobeScene";
-
-type CityPoint = { name: string; lat: number; lon: number };
+import type { CityPoint, GlobeController, GlobeView } from "./GlobeTypes";
 
 /**
- * Client shell around the three.js scene. Server-renders a pure-CSS poster
- * inside a fixed-height wrapper (zero CLS), then upgrades to WebGL only when
- * the globe nears the viewport. No WebGL / saveData / any failure → the old
- * FlightArc renders in the same box instead.
+ * Client shell around the Cesium Ion globe.
+ * FlightArc is only for no-WebGL / saveData / Ion failure — never a Three.js ball.
  */
 export default function Globe({
   from, to, outbound = true, replayKey = 0, km, hoursLabel, polar, view = "route",
@@ -22,16 +18,14 @@ export default function Globe({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);
-  const labelFromRef = useRef<HTMLSpanElement>(null);
-  const labelToRef = useRef<HTMLSpanElement>(null);
   const ctrlRef = useRef<GlobeController | null>(null);
   const [mode, setMode] = useState<"poster" | "webgl" | "fallback">("poster");
 
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return;
+    const canvasHost = canvasHostRef.current;
+    if (!host || !canvasHost) return;
 
-    // Capability gate: data-saver or no WebGL → the SVG arc, immediately.
     const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
     if (conn?.saveData) { setMode("fallback"); return; }
     try {
@@ -40,20 +34,21 @@ export default function Globe({
     } catch { setMode("fallback"); return; }
 
     let disposed = false;
-    const io = new IntersectionObserver(async (entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return;
-      io.disconnect();
+    const mount = async () => {
       try {
-        const { createGlobeScene } = await import("./GlobeScene");
+        const { createGlobeScene } = await import("./CesiumGlobe");
         if (disposed) return;
-        const canvasHost = canvasHostRef.current!;
         const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const ctrl = createGlobeScene(canvasHost, {
-          from, to,
-          labels: [labelFromRef.current!, labelToRef.current!],
-          reducedMotion,
-          onFail: () => { ctrlRef.current?.dispose(); ctrlRef.current = null; setMode("fallback"); },
+        const ctrl = await createGlobeScene(canvasHost, {
+          from, to, reducedMotion,
+          onFail: () => {
+            if (disposed) return;
+            ctrlRef.current?.dispose();
+            ctrlRef.current = null;
+            setMode("fallback");
+          },
         });
+        if (disposed) { ctrl.dispose(); return; }
         ctrlRef.current = ctrl;
         ctrl.setView(view);
         const size = () => ctrl.setSize(host.clientWidth, host.clientHeight);
@@ -69,19 +64,18 @@ export default function Globe({
         ctrl.dispose = () => { ro.disconnect(); vis.disconnect(); oldDispose(); };
         setMode("webgl");
       } catch (err) {
-        console.error("[globe] scene failed, falling back to flat arc:", err);
+        console.error("[globe] Cesium failed:", err);
         if (!disposed) setMode("fallback");
       }
-    }, { rootMargin: "600px 0px" });
-    io.observe(host);
+    };
+    mount();
 
     return () => {
       disposed = true;
-      io.disconnect();
       ctrlRef.current?.dispose();
       ctrlRef.current = null;
     };
-    // The pair is fixed for this mount — parents remount via key on pair change.
+    // Pair is fixed for this mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -103,12 +97,8 @@ export default function Globe({
       {mode === "poster" && (
         <div className="globeposter">
           <div className="globeball" />
-          <span className="globedot" style={{ background: "var(--sf)", insetInlineStart: "38%", top: "42%" }} />
-          <span className="globedot" style={{ background: "var(--del)", insetInlineStart: "60%", top: "36%" }} />
         </div>
       )}
-      <span className="globelabel" ref={labelFromRef} style={{ color: "var(--sf)" }}>{from.name}</span>
-      <span className="globelabel" ref={labelToRef} style={{ color: "var(--del)" }}>{to.name}</span>
       <div className="globecap">{"⁨"}{km} · {hoursLabel}{"⁩"}{polar ? ` ${polar}` : ""}</div>
     </div>
   );
