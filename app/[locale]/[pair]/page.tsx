@@ -74,22 +74,27 @@ export default async function RoutePage({ params }: Props) {
       a: t(msgs, "faq.a5", { dstAnswer: f.dstNote }) },
   ];
 
-  const jsonLd = [
-    {
-      "@context": "https://schema.org", "@type": "FAQPage",
-      mainEntity: faqs.map((x) => ({
-        "@type": "Question", name: x.q,
-        acceptedAnswer: { "@type": "Answer", text: x.a },
-      })),
-    },
-    {
-      "@context": "https://schema.org", "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: t(msgs, "nav.home"), item: `${SITE_URL}/${locale}` },
-        { "@type": "ListItem", position: 2, name: `${from.name} → ${to.name}`, item: `${SITE_URL}/${locale}/${pair}` },
-      ],
-    },
-  ];
+  // Safari throws TypeError on application/ld+json arrays
+  // (r["@context"].toLowerCase). One object + @graph is valid JSON-LD.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        mainEntity: faqs.map((x) => ({
+          "@type": "Question", name: x.q,
+          acceptedAnswer: { "@type": "Answer", text: x.a },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: t(msgs, "nav.home"), item: `${SITE_URL}/${locale}` },
+          { "@type": "ListItem", position: 2, name: `${from.name} → ${to.name}`, item: `${SITE_URL}/${locale}/${pair}` },
+        ],
+      },
+    ],
+  };
 
   const relatedFrom = RANKED.filter((c) => c.slug !== from.slug && c.tz !== from.tz).slice(0, 8);
   const relatedTo = RANKED.filter((c) => c.slug !== to.slug && c.tz !== to.tz).slice(0, 8);
