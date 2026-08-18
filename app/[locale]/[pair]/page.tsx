@@ -100,7 +100,7 @@ export default async function RoutePage({ params }: Props) {
       <script type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="eyebrow">{from.country} → {to.country}</div>
+      <div className="pairpage">
       <h1>{t(msgs, "route.h1", { from: from.name, to: to.name })}</h1>
       <p className="dek">
         <Link href={`/${locale}/${pairSlug(to.slug, from.slug)}`}>
@@ -116,11 +116,12 @@ export default async function RoutePage({ params }: Props) {
         defaultMinutes={f.flightMin}
         km={`${f.kmLabel} km`} hoursLabel={f.flightLabel}
         polar={f.isPolar ? `❄ ${f.peakLat}° ❄` : null}
-        gapMin={f.gap}
         halfHour={halfHour}
         dstKey={f.dstKey}
         fromName={from.name} toName={to.name}
       />
+
+      </div>
 
       <details className="grownups">
         <summary>{t(msgs, "play.grownups")}</summary>
