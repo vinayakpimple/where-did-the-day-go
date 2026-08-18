@@ -44,7 +44,7 @@ export default function PassportTeaser({ msgs, locale, totalCities }: {
                   {" → "}
                   <b style={{ color: "var(--del)" }}>{s.to}</b>
                 </div>
-                {s.stars > 0 && <div className="stampmeta"><span className="stampstars">{"⭐".repeat(s.stars)}</span></div>}
+                
               </div>
             ))}
           </div>

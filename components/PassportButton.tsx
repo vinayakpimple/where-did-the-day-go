@@ -83,7 +83,7 @@ export default function PassportButton({ msgs, locale, totalCities }: {
                         .format(new Date(`${s.first}T12:00:00`))}
                       {" · "}
                       {t(msgs, "passport.stampVisits", { n: nf.format(s.visits) })}
-                      {s.stars > 0 && <span className="stampstars"> {"⭐".repeat(s.stars)}</span>}
+                      
                     </div>
                   </div>
                 ))}

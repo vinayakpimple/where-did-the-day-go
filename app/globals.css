@@ -287,3 +287,13 @@ footer b{color:var(--ink2)}
   .stamp{rotate:0deg !important}
 }
 @keyframes star-fade{0%{opacity:1}100%{opacity:0}}
+
+/* ---------- play loop (NOW engagement cut) ---------- */
+.playloop{display:flex;flex-direction:column;gap:18px}
+.playcap{font-size:clamp(18px,2.8vw,22px);font-weight:750;line-height:1.35;margin:0}
+.stampbook{margin-top:4px}
+.grownups{margin:22px 0 8px;border:1px solid var(--border);border-radius:16px;padding:8px 16px 4px;background:var(--surface2)}
+.grownups>summary{cursor:pointer;font-weight:750;font-size:16px;padding:10px 0;list-style:none}
+.grownups>summary::-webkit-details-marker{display:none}
+.grownups[open]{padding-bottom:16px}
+.playloop .note,.playloop .kicker{display:none}
