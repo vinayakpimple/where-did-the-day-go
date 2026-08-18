@@ -26,6 +26,7 @@ export default function QuizCard({
   const [picked, setPicked] = useState<number | null>(null);
   const [burst, setBurst] = useState(0);
   const [stamped, setStamped] = useState(false);
+  const [gotOne, setGotOne] = useState(false);
   const [dstPick, setDstPick] = useState<null | "same" | "change">(null);
 
   const askDst = dstKey !== "neither" && idx === 2;
@@ -56,12 +57,14 @@ export default function QuizCard({
   const mark = (right: boolean) => {
     bumpQuizStats(right);
     if (right) {
-      stampOnce();
+      setGotOne(true);
       setBurst((n) => n + 1);
       sound.ding();
     } else {
       sound.tick();
     }
+    // Stamp only after the last of QUIZ_LEN questions — not on the first correct.
+    if (idx >= QUIZ_LEN - 1 && (right || gotOne)) stampOnce();
   };
 
   if (!q) {

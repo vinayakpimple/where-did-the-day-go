@@ -1,24 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getPassport, PASSPORT_EVENT } from "@/lib/passport";
 import { t, type Messages } from "@/lib/i18n";
 
-/** Shown after the first correct quiz answer on this pair. */
+/** Shown only after the 3-question quiz finishes. Parent mounts this. */
 export default function StampBook({
-  slug, fromName, toName, msgs, locale, glow = false, nextLabel, onNext,
+  fromName, toName, msgs, locale, glow = false, nextLabel, onNext,
 }: {
-  slug: string; fromName: string; toName: string; msgs: Messages; locale: string;
+  fromName: string; toName: string; msgs: Messages; locale: string;
   glow?: boolean; nextLabel?: string; onNext?: () => void;
 }) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const check = () => setReady(Boolean(getPassport().stamps[slug]));
-    check();
-    window.addEventListener(PASSPORT_EVENT, check);
-    return () => window.removeEventListener(PASSPORT_EVENT, check);
-  }, [slug]);
-  if (!ready) return null;
   return (
     <div className="stampbook" aria-live="polite" data-glow={glow || undefined}>
       <p className="playcap">{t(msgs, "quiz.stamped")}</p>

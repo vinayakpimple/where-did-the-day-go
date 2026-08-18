@@ -123,8 +123,8 @@ export default function PlayLoop({
           </button>
         )}
 
-        {flown && step >= 4 && step <= 5 && (
-          <div className="hud-quiz" data-glow={step === 4 || undefined}>
+        {flown && step === 4 && (
+          <div className="hud-quiz" data-glow="true">
             <QuizCard
               from={{ name: from.name, tz: from.tz }}
               to={{ name: to.name, tz: to.tz }}
@@ -135,13 +135,15 @@ export default function PlayLoop({
           </div>
         )}
 
-        <StampBook
-          slug={pairSlug} fromName={fromName} toName={toName}
-          msgs={msgs} locale={locale}
-          glow={step === 5}
-          nextLabel={step === 5 ? t(msgs, "play.next") : undefined}
-          onNext={step === 5 ? () => setStep(6) : undefined}
-        />
+        {step === 5 && (
+          <StampBook
+            fromName={fromName} toName={toName}
+            msgs={msgs} locale={locale}
+            glow
+            nextLabel={t(msgs, "play.next")}
+            onNext={() => setStep(6)}
+          />
+        )}
 
         {step >= 2 && (
           <div className="hud-slider">

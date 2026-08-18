@@ -386,7 +386,7 @@ body:has(.inflight-map) footer{display:none}
 
 .hud-quiz{
   position:absolute;left:10px;right:10px;bottom:168px;
-  max-height:38%;overflow:auto;z-index:4;
+  max-height:38%;overflow:auto;z-index:5;
   background:rgba(8,12,23,.72);border:1px solid var(--border);border-radius:16px;
   padding:10px 12px;backdrop-filter:blur(12px);
 }
@@ -448,5 +448,5 @@ body:has(.inflight-map) footer{display:none}
 @media (max-width:640px){
   .hud-views{left:10px;right:28%;transform:none;max-width:64vw;overflow-x:auto}
   .hud-grownups-btn{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .inflight-map .stampbook{top:auto;bottom:168px;width:min(220px,56vw)}
+  .inflight-map .stampbook{top:96px;bottom:auto;width:min(200px,42vw)}
 }
