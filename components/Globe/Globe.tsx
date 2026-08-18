@@ -66,7 +66,8 @@ export default function Globe({
         const oldDispose = ctrl.dispose.bind(ctrl);
         ctrl.dispose = () => { ro.disconnect(); vis.disconnect(); oldDispose(); };
         setMode("webgl");
-      } catch {
+      } catch (err) {
+        console.error("[globe] scene failed, falling back to flat arc:", err);
         if (!disposed) setMode("fallback");
       }
     }, { rootMargin: "600px 0px" });

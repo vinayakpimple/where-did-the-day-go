@@ -191,6 +191,22 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   };
   applyOrientation();
 
+  /* ----------------------- shared mutable state ------------------------- */
+  // Declared before anything below runs at creation time (refreshSun writes
+  // needsFrame immediately — declaring these later is a TDZ crash).
+  let raf = 0;
+  let paused = false;
+  let needsFrame = true;
+  let last = performance.now();
+
+  let introT = opts.reducedMotion ? 1 : 0;            // 0..1 over the intro sweep
+  let planeT = opts.reducedMotion ? 0.5 : 0;          // position along the path
+  let flyT = -1;                                      // ≥0 while a one-shot flight runs
+  let outbound = true;
+  let yawVel = 0;                                     // inertia, rad/s
+  let lastInteract = performance.now();
+  let dragging = false;
+
   /* ------------------------------ sun/labels ---------------------------- */
   let localSun = new THREE.Vector3();
   const refreshSun = () => {
@@ -213,20 +229,6 @@ export function createGlobeScene(host: HTMLDivElement, opts: {
   };
 
   /* ------------------------------ animators ----------------------------- */
-  let raf = 0;
-  let running = false;
-  let paused = false;
-  let needsFrame = true;
-  let last = performance.now();
-
-  let introT = opts.reducedMotion ? 1 : 0;            // 0..1 over 2.4s
-  let planeT = opts.reducedMotion ? 0.5 : 0;          // position along the path
-  let flyT = -1;                                      // ≥0 while a one-shot flight runs
-  let outbound = true;
-  let yawVel = 0;                                     // inertia, rad/s
-  let lastInteract = performance.now();
-  let dragging = false;
-
   const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
   const pathAt = (t: number): Vec3 => {
