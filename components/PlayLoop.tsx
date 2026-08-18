@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Globe from "@/components/Globe/Globe";
-import type { GlobeView } from "@/components/Globe/GlobeScene";
+import type { GlobeView } from "@/components/Globe/GlobeTypes";
 import ClockPills from "@/components/ClockPills";
 import QuizCard from "@/components/QuizCard";
 import StampBook from "@/components/StampBook";
