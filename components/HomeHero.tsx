@@ -9,8 +9,8 @@ import CityPicker from "@/components/CityPicker";
 
 /**
  * Homepage hero: the globe mirrors the picker live, before the child even
- * presses Go. The globe remounts per pair (key) — the three.js module and
- * textures are cached after the first mount, so this is cheap.
+ * presses Go. The globe remounts per pair (key) — Cesium is cached after the
+ * first dynamic import.
  */
 export default function HomeHero({
   locale, msgs, initialFrom, initialTo,
@@ -25,8 +25,9 @@ export default function HomeHero({
       <Globe key={`${pair.from.slug}-${pair.to.slug}`}
         from={{ name: pair.from.name, lat: pair.from.lat, lon: pair.from.lon }}
         to={{ name: pair.to.name, lat: pair.to.lat, lon: pair.to.lon }}
-        km={`${kmLabel} km`} hoursLabel={hm(estimateFlightMinutes(km))} polar={null} />
-      <p className="note globehint" aria-hidden="true">🌍 {t(msgs, "globe.dragHint")}</p>
+        km={`${kmLabel} km`} hoursLabel={hm(estimateFlightMinutes(km))} polar={null}
+        flyLabel={t(msgs, "globe.flyRoute")} />
+      <p className="note globehint" aria-hidden="true">{t(msgs, "globe.dragHint")}</p>
       <CityPicker locale={locale} msgs={msgs}
         initialFrom={initialFrom} initialTo={initialTo}
         onChange={(from, to) => setPair({ from, to })} />

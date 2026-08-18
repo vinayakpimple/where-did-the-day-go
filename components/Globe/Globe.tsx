@@ -2,27 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import FlightArc from "@/components/FlightArc";
-import type { GlobeController } from "./GlobeScene";
-
-type CityPoint = { name: string; lat: number; lon: number };
+import type { CityPoint, GlobeController } from "./GlobeTypes";
 
 /**
- * Client shell around the three.js scene. Server-renders a pure-CSS poster
- * inside a fixed-height wrapper (zero CLS), then upgrades to WebGL only when
- * the globe nears the viewport. No WebGL / saveData / any failure → the old
- * FlightArc renders in the same box instead.
+ * Client shell around the Cesium globe. Server-renders a CSS poster inside a
+ * fixed-height wrapper (zero CLS), then upgrades to WebGL only when the globe
+ * nears the viewport. No WebGL / saveData / any failure → FlightArc.
  */
 export default function Globe({
-  from, to, outbound = true, replayKey = 0, km, hoursLabel, polar,
+  from, to, outbound = true, replayKey = 0, km, hoursLabel, polar, flyLabel,
 }: {
   from: CityPoint; to: CityPoint;
   outbound?: boolean; replayKey?: number;
   km: string; hoursLabel: string; polar: string | null;
+  flyLabel?: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);
-  const labelFromRef = useRef<HTMLSpanElement>(null);
-  const labelToRef = useRef<HTMLSpanElement>(null);
   const ctrlRef = useRef<GlobeController | null>(null);
   const [mode, setMode] = useState<"poster" | "webgl" | "fallback">("poster");
 
@@ -30,7 +26,6 @@ export default function Globe({
     const host = hostRef.current;
     if (!host) return;
 
-    // Capability gate: data-saver or no WebGL → the SVG arc, immediately.
     const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
     if (conn?.saveData) { setMode("fallback"); return; }
     try {
@@ -43,16 +38,15 @@ export default function Globe({
       if (!entries.some((e) => e.isIntersecting)) return;
       io.disconnect();
       try {
-        const { createGlobeScene } = await import("./GlobeScene");
+        const { createGlobeScene } = await import("./CesiumGlobe");
         if (disposed) return;
         const canvasHost = canvasHostRef.current!;
         const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const ctrl = createGlobeScene(canvasHost, {
-          from, to,
-          labels: [labelFromRef.current!, labelToRef.current!],
-          reducedMotion,
+        const ctrl = await createGlobeScene(canvasHost, {
+          from, to, reducedMotion,
           onFail: () => { ctrlRef.current?.dispose(); ctrlRef.current = null; setMode("fallback"); },
         });
+        if (disposed) { ctrl.dispose(); return; }
         ctrlRef.current = ctrl;
         const size = () => ctrl.setSize(host.clientWidth, host.clientHeight);
         size();
@@ -67,7 +61,7 @@ export default function Globe({
         ctrl.dispose = () => { ro.disconnect(); vis.disconnect(); oldDispose(); };
         setMode("webgl");
       } catch (err) {
-        console.error("[globe] scene failed, falling back to flat arc:", err);
+        console.error("[globe] Cesium failed, falling back to flat arc:", err);
         if (!disposed) setMode("fallback");
       }
     }, { rootMargin: "600px 0px" });
@@ -95,7 +89,7 @@ export default function Globe({
   }
 
   return (
-    <div className="globewrap" ref={hostRef} aria-hidden="true">
+    <div className="globewrap" ref={hostRef}>
       <div className="globecanvas" ref={canvasHostRef} />
       {mode === "poster" && (
         <div className="globeposter">
@@ -104,8 +98,11 @@ export default function Globe({
           <span className="globedot" style={{ background: "var(--del)", insetInlineStart: "60%", top: "36%" }} />
         </div>
       )}
-      <span className="globelabel" ref={labelFromRef} style={{ color: "var(--sf)" }}>{from.name}</span>
-      <span className="globelabel" ref={labelToRef} style={{ color: "var(--del)" }}>{to.name}</span>
+      {mode === "webgl" && flyLabel && (
+        <button type="button" className="globefly" onClick={() => ctrlRef.current?.flyOnce()}>
+          {flyLabel}
+        </button>
+      )}
       <div className="globecap">{"⁨"}{km} · {hoursLabel}{"⁩"}{polar ? ` ${polar}` : ""}</div>
     </div>
   );

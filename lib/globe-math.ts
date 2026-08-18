@@ -1,7 +1,6 @@
 /**
- * Geometry for the 3D globe as plain number arrays. Deliberately does not import
- * three — lib/ stays dependency-free and unit-testable; only GlobeScene turns
- * these into three.js objects.
+ * Geometry helpers as plain number arrays. Deliberately does not import Cesium
+ * or any renderer — lib/ stays dependency-free.
  */
 export type Vec3 = [number, number, number];
 

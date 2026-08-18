@@ -39,6 +39,7 @@ export default function GlobePanel({
         outbound={flight.outbound}
         replayKey={flight.changeId}
         km={km} hoursLabel={hoursLabel} polar={polar}
+        flyLabel={t(msgs, "globe.flyRoute")}
       />
       <p className="note globehint" aria-hidden="true">{t(msgs, "globe.dragHint")}</p>
       <TripSim from={from} to={to} defaultMinutes={defaultMinutes}

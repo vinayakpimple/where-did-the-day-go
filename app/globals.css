@@ -242,11 +242,23 @@ footer b{color:var(--ink2)}
 }
 
 /* ---------- globe ---------- */
-.globewrap{position:relative;height:clamp(280px,52vw,420px);border:1px solid var(--border);border-radius:16px;
+.globewrap{position:relative;height:clamp(360px,62vw,560px);border:1px solid var(--border);border-radius:16px;
   overflow:hidden;background:linear-gradient(180deg,#0a1020,#0f1524);direction:ltr}
 .globewrap .arcwrap{border:0;border-radius:0}
 .globecanvas{position:absolute;inset:0}
-.globecanvas canvas{touch-action:pan-y;display:block;cursor:grab}
+.globecanvas .cesium-viewer,.globecanvas .cesium-viewer-cesiumWidgetContainer,
+.globecanvas .cesium-widget,.globecanvas .cesium-widget canvas{width:100%;height:100%;display:block}
+.globecanvas .cesium-viewer-bottom{display:none}
+.globecanvas .cesium-viewer-toolbar,.globecanvas .cesium-viewer-animationContainer,
+.globecanvas .cesium-viewer-timelineContainer,.globecanvas .cesium-viewer-fullscreenContainer{display:none}
+.globecredit{position:absolute;inset-inline-end:8px;bottom:8px;z-index:2;pointer-events:none;
+  font-size:10px;color:var(--muted);max-width:55%;text-align:end;text-shadow:0 1px 2px rgba(0,0,0,.8)}
+.globecredit *{color:inherit !important;font-size:inherit !important}
+.globefly{position:absolute;inset-inline-start:10px;bottom:10px;z-index:3;
+  font-family:inherit;font-size:13px;font-weight:750;color:#fff;
+  background:rgba(8,12,23,.72);border:1px solid var(--border);border-radius:99px;
+  padding:8px 14px;cursor:pointer}
+.globefly:hover,.globefly:focus-visible{border-color:var(--acc)}
 .globeposter{position:absolute;inset:0;pointer-events:none}
 .globeball{position:absolute;left:50%;top:50%;width:min(60%,300px);aspect-ratio:1;transform:translate(-50%,-50%);
   border-radius:50%;background:radial-gradient(circle at 35% 32%,#2a4a7f,#12213f 55%,#080d1c 80%);
