@@ -19,6 +19,12 @@ export type QuizStats = { v: 1; answered: number; correct: number };
 const PASSPORT_KEY = "wdtdg.passport.v1";
 const QUIZ_KEY = "wdtdg.quiz.v1";
 export const PASSPORT_EVENT = "wdtdg:passport";
+export const OPEN_PASSPORT_EVENT = "wdtdg:open-passport";
+
+/** Open the topbar stamp book from the pair-page HUD (step 9). */
+export function openPassport() {
+  window.dispatchEvent(new Event(OPEN_PASSPORT_EVENT));
+}
 
 function today(): string {
   const d = new Date();

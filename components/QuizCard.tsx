@@ -26,16 +26,18 @@ export default function QuizCard({
   const [picked, setPicked] = useState<number | null>(null);
   const [burst, setBurst] = useState(0);
   const [stamped, setStamped] = useState(false);
+  const [gotOne, setGotOne] = useState(false);
   const [dstPick, setDstPick] = useState<null | "same" | "change">(null);
 
   const askDst = dstKey !== "neither" && idx === 2;
 
   const fresh = (n: number) => {
+    const next = Math.max(0, Math.min(n, QUIZ_LEN - 1));
     const gap = gapMinutes(new Date(), from.tz, to.tz);
     setQ(makeQuestion(gap, 1, Math.random));
     setPicked(null);
     setDstPick(null);
-    setIdx(n);
+    setIdx(next);
   };
   useEffect(() => { fresh(0); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -55,12 +57,14 @@ export default function QuizCard({
   const mark = (right: boolean) => {
     bumpQuizStats(right);
     if (right) {
-      stampOnce();
+      setGotOne(true);
       setBurst((n) => n + 1);
       sound.ding();
     } else {
       sound.tick();
     }
+    // Stamp only after the last of QUIZ_LEN questions — not on the first correct.
+    if (idx >= QUIZ_LEN - 1 && (right || gotOne)) stampOnce();
   };
 
   if (!q) {
@@ -81,7 +85,6 @@ export default function QuizCard({
   const wasRight = askDst
     ? dstPick === dstCorrect
     : picked === q.correctIdx;
-  const done = idx >= QUIZ_LEN - 1 && answered;
 
   const questionParts = t(msgs, "quiz.question", {
     time: timeStr(q.askMin), city: "[[CITY]]", other: "[[OTHER]]",
@@ -136,10 +139,18 @@ export default function QuizCard({
         
       </div>
       <div className="quizfoot">
-        <span className="quizstreak">{t(msgs, "quiz.progress", { n: String(idx + 1), total: String(QUIZ_LEN) })}</span>
-        {!done && (
+        <span className="quizstreak">{t(msgs, "quiz.progress", {
+          n: String(Math.min(idx + 1, QUIZ_LEN)),
+          total: String(QUIZ_LEN),
+        })}</span>
+        {answered && idx < QUIZ_LEN - 1 && (
           <button className="tab" onClick={() => fresh(idx + 1)}>
-            {answered && !wasRight ? t(msgs, "quiz.tryAgain") : t(msgs, "quiz.next")}
+            {wasRight ? t(msgs, "quiz.next") : t(msgs, "quiz.tryAgain")}
+          </button>
+        )}
+        {answered && !wasRight && idx >= QUIZ_LEN - 1 && (
+          <button className="tab" onClick={() => fresh(idx)}>
+            {t(msgs, "quiz.tryAgain")}
           </button>
         )}
       </div>

@@ -189,5 +189,21 @@
   "play.view.follow": "Follow",
   "play.view.daynight": "Day and night",
   "play.caption.follow": "You're behind the plane. Pinch to look closer.",
-  "play.caption.daynight": "One side in daylight. The other is night."
+  "play.caption.daynight": "One side in daylight. The other is night.",
+  "play.start": "Start",
+  "play.next": "Next",
+  "play.steps": "Your steps",
+  "play.step.1": "Look at both clocks — same second, two times.",
+  "play.step.2": "Slide takeoff — pick when you leave.",
+  "play.step.3": "Tap Take off — watch the plane fly.",
+  "play.step.4": "Guess the time in the other city.",
+  "play.step.5": "Earn the stamp for this pair.",
+  "play.step.6": "Tap Follow — sit behind the plane.",
+  "play.step.7": "Tap Day and night — one side light, one side night.",
+  "play.step.8": "Fly home the other way.",
+  "play.step.9": "Open your stamp book.",
+  "play.flyHome": "Fly home",
+  "play.openBook": "Open stamp book",
+  "play.grownups.close": "Back to the map",
+  "play.grownups.lead": "Notes for parents — kids can skip this."
 }

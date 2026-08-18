@@ -6,8 +6,8 @@ import { partsIn } from "@/lib/tz";
 type CityLite = { name: string; tz: string };
 
 export default function ClockPills({
-  from, to, locale,
-}: { from: CityLite; to: CityLite; locale: string }) {
+  from, to, locale, glow = false,
+}: { from: CityLite; to: CityLite; locale: string; glow?: boolean }) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -24,7 +24,7 @@ export default function ClockPills({
   };
 
   return (
-    <div className="hud-clocks">
+    <div className="hud-clocks" data-glow={glow || undefined}>
       <span className="clockpill clockpill-from">
         <b>{from.name}</b> {fmt(from.tz)}
       </span>
