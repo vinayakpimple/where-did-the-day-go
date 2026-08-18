@@ -4,16 +4,15 @@
   "private": true,
   "scripts": {
     "copy:cesium": "node scripts/copy-cesium.mjs",
-    "postinstall": "node scripts/copy-cesium.mjs",
-    "dev": "node scripts/copy-cesium.mjs && next dev",
-    "build": "node scripts/copy-cesium.mjs && node scripts/expand-messages.mjs && node scripts/validate-messages.mjs && node scripts/gen-sitemap-index.mjs && next build",
+    "dev": "next dev",
+    "build": "node scripts/expand-messages.mjs && node scripts/validate-messages.mjs && node scripts/gen-sitemap-index.mjs && next build",
     "start": "next start",
     "check:cities": "node --experimental-strip-types scripts/validate-cities.ts",
     "check": "node scripts/validate-messages.mjs",
     "bundle:messages": "node scripts/bundle-messages.mjs"
   },
   "dependencies": {
-    "cesium": "^1.137.0",
+    "cesium": "1.137.0",
     "next": "^15.5.23",
     "react": "19.1.1",
     "react-dom": "19.1.1"

@@ -1,20 +1,58 @@
 /**
- * CesiumJS globe — loaded only via dynamic import() from Globe.tsx so the
- * engine never lands in the server bundle or the initial route chunk.
+ * CesiumJS globe — loaded only via dynamic import() from Globe.tsx.
  *
- * No Cesium ion token. Default imagery is Esri World Imagery (satellite) on
- * the ellipsoid. Sun lighting uses Cesium's built-in sun. Optional Google
- * Photorealistic 3D Tiles load only when NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY is set.
+ * Engine + workers + widgets.css come from the public jsDelivr CDN (same
+ * pinned version as package.json). That keeps Vercel SSO / gitignored
+ * /cesium/* from 302ing Web Workers. No ion token. Optional Google 3D tiles
+ * stay off unless NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY is set.
  */
 import type { Cartesian3 } from "cesium";
+import { CESIUM_BASE_URL } from "@/lib/cesium-cdn";
 import type { CityPoint, GlobeController } from "./GlobeTypes";
 
 const SF = "#3987e5";
 const DEL = "#c98500";
 const ESRI_IMAGERY =
   "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const OSM_IMAGERY = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 type CesiumNS = typeof import("cesium");
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const hit = document.querySelector<HTMLScriptElement>(`script[data-cesium-engine="1"]`);
+    if (hit && (window as unknown as { Cesium?: CesiumNS }).Cesium) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.dataset.cesiumEngine = "1";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+function ensureWidgetsCss(base: string) {
+  if (document.querySelector('link[data-cesium-widgets="1"]')) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `${base}Widgets/widgets.css`;
+  link.dataset.cesiumWidgets = "1";
+  document.head.appendChild(link);
+}
+
+async function loadCesium(): Promise<CesiumNS> {
+  const w = window as unknown as { CESIUM_BASE_URL?: string; Cesium?: CesiumNS };
+  w.CESIUM_BASE_URL = CESIUM_BASE_URL;
+  ensureWidgetsCss(CESIUM_BASE_URL);
+  if (w.Cesium) return w.Cesium;
+  await loadScript(`${CESIUM_BASE_URL}Cesium.js`);
+  if (!w.Cesium) throw new Error("Cesium.js loaded without window.Cesium");
+  return w.Cesium;
+}
 
 function geodesicPath(Cesium: CesiumNS, a: CityPoint, b: CityPoint, segments = 128): Cartesian3[] {
   const start = Cesium.Cartographic.fromDegrees(a.lon, a.lat);
@@ -68,6 +106,38 @@ function addCity(
   });
 }
 
+function makeLayer(
+  Cesium: CesiumNS,
+  url: string,
+  credit: string,
+) {
+  return new Cesium.ImageryLayer(
+    new Cesium.UrlTemplateImageryProvider({
+      url,
+      credit: new Cesium.Credit(credit, false),
+      maximumLevel: 19,
+    }),
+  );
+}
+
+function useOsmIfEsriFails(Cesium: CesiumNS, viewer: import("cesium").Viewer) {
+  const layer = viewer.imageryLayers.get(0);
+  const provider = layer?.imageryProvider as { errorEvent?: { addEventListener(fn: () => void): void } } | undefined;
+  if (!provider?.errorEvent) return;
+  let swapped = false;
+  provider.errorEvent.addEventListener(() => {
+    if (swapped) return;
+    swapped = true;
+    try {
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.add(makeLayer(Cesium, OSM_IMAGERY, "© OpenStreetMap"));
+      viewer.scene.requestRender();
+    } catch (err) {
+      console.warn("[globe] OSM imagery fallback failed", err);
+    }
+  });
+}
+
 export async function createGlobeScene(
   host: HTMLDivElement,
   opts: {
@@ -77,43 +147,62 @@ export async function createGlobeScene(
     onFail(): void;
   },
 ): Promise<GlobeController> {
-  (globalThis as unknown as { CESIUM_BASE_URL: string }).CESIUM_BASE_URL = "/cesium/";
+  host.style.width = "100%";
+  host.style.height = "100%";
+  host.style.minHeight = "280px";
 
-  const Cesium = await import("cesium");
-  await import("cesium/Build/Cesium/Widgets/widgets.css");
+  const Cesium = await loadCesium();
 
+  const wrap = host.closest(".globewrap") ?? host.parentElement ?? host;
   const creditHost = document.createElement("div");
   creditHost.className = "globecredit";
+  wrap.appendChild(creditHost);
 
-  const baseLayer = new Cesium.ImageryLayer(
-    new Cesium.UrlTemplateImageryProvider({
-      url: ESRI_IMAGERY,
-      credit: new Cesium.Credit("Esri, Maxar, Earthstar Geographics", false),
-      maximumLevel: 19,
-    }),
-  );
+  let viewer: import("cesium").Viewer;
+  try {
+    viewer = new Cesium.Viewer(host, {
+      animation: false,
+      baseLayerPicker: false,
+      fullscreenButton: false,
+      vrButton: false,
+      geocoder: false,
+      homeButton: false,
+      infoBox: false,
+      sceneModePicker: false,
+      selectionIndicator: false,
+      timeline: false,
+      navigationHelpButton: false,
+      navigationInstructionsInitiallyVisible: false,
+      creditContainer: creditHost,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      baseLayer: makeLayer(Cesium, ESRI_IMAGERY, "Esri, Maxar, Earthstar Geographics"),
+      requestRenderMode: true,
+      maximumRenderTimeChange: Infinity,
+      msaaSamples: 1,
+    });
+  } catch (err) {
+    console.warn("[globe] Viewer with Esri failed, retrying with OSM", err);
+    viewer = new Cesium.Viewer(host, {
+      animation: false,
+      baseLayerPicker: false,
+      fullscreenButton: false,
+      vrButton: false,
+      geocoder: false,
+      homeButton: false,
+      infoBox: false,
+      sceneModePicker: false,
+      selectionIndicator: false,
+      timeline: false,
+      navigationHelpButton: false,
+      creditContainer: creditHost,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      baseLayer: makeLayer(Cesium, OSM_IMAGERY, "© OpenStreetMap"),
+      requestRenderMode: true,
+      maximumRenderTimeChange: Infinity,
+    });
+  }
 
-  const viewer = new Cesium.Viewer(host, {
-    animation: false,
-    baseLayerPicker: false,
-    fullscreenButton: false,
-    vrButton: false,
-    geocoder: false,
-    homeButton: false,
-    infoBox: false,
-    sceneModePicker: false,
-    selectionIndicator: false,
-    timeline: false,
-    navigationHelpButton: false,
-    navigationInstructionsInitiallyVisible: false,
-    creditContainer: creditHost,
-    terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-    baseLayer,
-    requestRenderMode: true,
-    maximumRenderTimeChange: Infinity,
-    msaaSamples: 1,
-  });
-  host.closest(".globewrap")?.appendChild(creditHost);
+  useOsmIfEsriFails(Cesium, viewer);
 
   const scene = viewer.scene;
   scene.globe.enableLighting = true;
@@ -144,11 +233,10 @@ export async function createGlobeScene(
       scene.primitives.add(tileset);
       sscc.minimumZoomDistance = 80;
     } catch (err) {
-      console.warn("[globe] Google 3D tiles unavailable, staying on satellite imagery", err);
+      console.warn("[globe] Google 3D tiles unavailable, staying on imagery", err);
     }
   }
 
-  // Blue is always the page-origin city, gold the destination (invariant 4).
   addCity(Cesium, viewer, opts.from, SF);
   addCity(Cesium, viewer, opts.to, DEL);
 

@@ -40,6 +40,9 @@ export default function GlobePanel({
         replayKey={flight.changeId}
         km={km} hoursLabel={hoursLabel} polar={polar}
         flyLabel={t(msgs, "globe.flyRoute")}
+        loadingLabel={t(msgs, "globe.loading")}
+        failedLabel={t(msgs, "globe.failed")}
+        retryLabel={t(msgs, "globe.retry")}
       />
       <p className="note globehint" aria-hidden="true">{t(msgs, "globe.dragHint")}</p>
       <TripSim from={from} to={to} defaultMinutes={defaultMinutes}

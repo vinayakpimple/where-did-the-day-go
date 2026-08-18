@@ -1,7 +1,8 @@
 /**
- * Cesium loads Workers / Assets / Widgets / ThirdParty at runtime from
- * CESIUM_BASE_URL. Copy them into public/ so Next can serve them as static
- * files. Re-run on every install and before next build / next dev.
+ * Optional local copy of Cesium static files. The live globe loads Workers /
+ * Widgets / Assets from the jsDelivr CDN by default (see lib/cesium-cdn.ts),
+ * so this is not required for Vercel. If you run it, a missing install is a
+ * hard failure — never skip with exit 0.
  */
 import { cpSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -11,8 +12,8 @@ const destRoot = join("public", "cesium");
 const dirs = ["Workers", "ThirdParty", "Assets", "Widgets"];
 
 if (!existsSync(srcRoot)) {
-  console.warn("copy-cesium: cesium is not installed, skipping");
-  process.exit(0);
+  console.error("copy-cesium: node_modules/cesium/Build/Cesium is missing. Run npm install.");
+  process.exit(1);
 }
 
 rmSync(destRoot, { recursive: true, force: true });

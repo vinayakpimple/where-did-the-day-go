@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { CESIUM_BASE_URL } from "./lib/cesium-cdn";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
   webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.DefinePlugin({
-        CESIUM_BASE_URL: JSON.stringify("/cesium/"),
+        CESIUM_BASE_URL: JSON.stringify(CESIUM_BASE_URL),
       }),
     );
     config.resolve.fallback = {

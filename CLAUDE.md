@@ -52,11 +52,12 @@ half-English page. Do not move them out of the build command.
 
 **0. `cesium` is the one rendering dependency, and it stays quarantined.**
 Imported ONLY from `components/Globe/CesiumGlobe.ts`, which is itself loaded via a runtime
-`import()` from `Globe.tsx` when the globe nears the viewport. It must never appear in the
-server bundle or the initial route chunk (`grep` the route chunk for `Viewer` / `Ellipsoid`
-after a build if in doubt). `Globe.tsx` falls back to `FlightArc.tsx` when WebGL is
-unavailable — do not delete FlightArc. No Cesium ion token is required; optional Google
-Photorealistic 3D Tiles stay off unless `NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY` is set.
+`import()` from `Globe.tsx` when the globe nears the viewport. Workers, widgets.css and
+Cesium.js load from the pinned jsDelivr CDN (`lib/cesium-cdn.ts`) so a missing
+`public/cesium` or a Vercel SSO cookie cannot 302 the Web Workers. FlightArc is ONLY for
+no-WebGL / saveData — a Cesium exception must not swap to the 2D arc. No ion token is
+required; optional Google Photorealistic 3D Tiles stay off unless
+`NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY` is set.
 
 **1. No time-zone library. Ever.**
 `lib/tz.ts` uses `Intl` only, which reads the IANA database already inside Node and every

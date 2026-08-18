@@ -26,7 +26,10 @@ export default function HomeHero({
         from={{ name: pair.from.name, lat: pair.from.lat, lon: pair.from.lon }}
         to={{ name: pair.to.name, lat: pair.to.lat, lon: pair.to.lon }}
         km={`${kmLabel} km`} hoursLabel={hm(estimateFlightMinutes(km))} polar={null}
-        flyLabel={t(msgs, "globe.flyRoute")} />
+        flyLabel={t(msgs, "globe.flyRoute")}
+        loadingLabel={t(msgs, "globe.loading")}
+        failedLabel={t(msgs, "globe.failed")}
+        retryLabel={t(msgs, "globe.retry")} />
       <p className="note globehint" aria-hidden="true">{t(msgs, "globe.dragHint")}</p>
       <CityPicker locale={locale} msgs={msgs}
         initialFrom={initialFrom} initialTo={initialTo}
